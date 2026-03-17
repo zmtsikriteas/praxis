@@ -4,6 +4,32 @@ Scientific data analysis and publication-quality plotting.
 
 Praxis (from Greek *praxis*, practice, action) gives researchers a natural-language interface for every characterisation technique they encounter in the lab. Load raw data, run technique-aware analysis, and produce journal-ready figures.
 
+## Examples
+
+### XRD pattern with peak labelling (Nature style)
+
+![XRD](examples/xrd_nature.png)
+
+### Tensile test with modulus and UTS annotation (Elsevier style)
+
+![Stress-strain](examples/stress_strain_elsevier.png)
+
+### Gaussian curve fit with 95% confidence band (RSC style)
+
+![Gaussian fit](examples/gaussian_fit_rsc.png)
+
+### Signal processing: raw, FFT, filtered (IEEE style)
+
+![Signal processing](examples/signal_processing_ieee.png)
+
+### Multi-panel publication figure (Science style)
+
+![Multi-panel](examples/multipanel_science.png)
+
+### 2D contour field map (Springer style)
+
+![Contour](examples/contour_springer.png)
+
 ## What It Does
 
 - 36 Python modules covering 50+ characterisation techniques
@@ -119,9 +145,9 @@ apply_style("science")  # 90mm column, Helvetica 6pt
 
 All palettes are colourblind-safe:
 
-- **Okabe-Ito** (default): 8 colours, widely used in scientific publishing
-- **Tol Bright / Tol Muted**: Paul Tol's optimised palettes
-- **uchu**: Perceptually uniform OKLCh palettes (8 categorical + 9 sequential sub-palettes)
+- Okabe-Ito (default): 8 colours, widely used in scientific publishing
+- Tol Bright / Tol Muted: Paul Tol's optimised palettes
+- uchu: perceptually uniform OKLCh palettes (8 categorical + 9 sequential sub-palettes)
 
 ```python
 from core.utils import set_palette
