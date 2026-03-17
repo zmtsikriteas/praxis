@@ -2,7 +2,7 @@
 
 ## What This Is
 
-Praxis is a Claude Code skill for scientific data analysis and publication-quality plotting. It provides a natural-language interface for every characterisation technique researchers encounter in the lab — from raw data files to journal-ready figures.
+Praxis is a scientific data analysis and publication-quality plotting toolkit. It provides a natural-language interface for every characterisation technique researchers encounter in the lab, from raw data files to journal-ready figures.
 
 ## Project Structure
 

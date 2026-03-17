@@ -1,20 +1,20 @@
 # Praxis
 
-**Scientific data analysis and publication-quality plotting for Claude Code.**
+Scientific data analysis and publication-quality plotting.
 
-Praxis (from Greek *praxis* — practice, action) gives researchers a natural-language interface for every characterisation technique they encounter in the lab. Load raw data, run technique-aware analysis, and produce journal-ready figures — all through conversation.
+Praxis (from Greek *praxis*, practice, action) gives researchers a natural-language interface for every characterisation technique they encounter in the lab. Load raw data, run technique-aware analysis, and produce journal-ready figures.
 
 ## What It Does
 
-- **36 Python modules** covering 50+ characterisation techniques
-- **21 dedicated technique modules** with domain-specific analysis
-- **16 data formats** supported with auto-detection
-- **15+ plot types** including specialised scientific plots
-- **9 journal styles** (Nature, Science, ACS, Elsevier, Wiley, RSC, Springer, IEEE, MDPI)
-- **Colourblind-safe palettes** by default (Okabe-Ito, Tol, uchu)
-- **Batch processing** — same analysis across hundreds of files
-- **Analysis templates** — save pipelines, replay on new data
-- **Auto-generated reports** in Markdown
+- 36 Python modules covering 50+ characterisation techniques
+- 21 dedicated technique modules with domain-specific analysis
+- 16 data formats supported with auto-detection
+- 15+ plot types including specialised scientific plots
+- 9 journal styles (Nature, Science, ACS, Elsevier, Wiley, RSC, Springer, IEEE, MDPI)
+- Colourblind-safe palettes by default (Okabe-Ito, Tol, uchu)
+- Batch processing across hundreds of files
+- Analysis templates: save pipelines, replay on new data
+- Auto-generated reports in Markdown
 
 ## Supported Techniques
 
@@ -38,14 +38,10 @@ Praxis (from Greek *praxis* — practice, action) gives researchers a natural-la
 ### Installation
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/praxis.git
+git clone https://github.com/zmtsikriteas/praxis.git
 cd praxis
 pip install -r requirements.txt
 ```
-
-### As a Claude Code Skill
-
-Copy the `praxis/` folder into your working directory. Claude Code will detect the `SKILL.md` and make all `/praxis:*` commands available.
 
 ### In Python Scripts
 
@@ -80,28 +76,28 @@ fig, ax = plot_data(
 export_figure(fig, "xrd_pattern.svg", dpi=300, output_dir="figures")
 ```
 
-## Slash Commands
+## Commands
 
 ```
-/praxis:plot       — Create any plot from data
-/praxis:fit        — Curve fitting (10+ models + custom equations)
-/praxis:peaks      — Peak detection, fitting, deconvolution
-/praxis:baseline   — Baseline correction (polynomial, ALS, Shirley, SNIP)
-/praxis:fft        — FFT, power spectrum, filtering
-/praxis:smooth     — Savitzky-Golay, Gaussian, median, Whittaker
-/praxis:stats      — Descriptive stats, t-test, ANOVA, regression
-/praxis:batch      — Process multiple files with same pipeline
-/praxis:template   — Save/load analysis pipelines
-/praxis:report     — Auto-generate analysis summary
-/praxis:xrd        — XRD analysis (Scherrer, Williamson-Hall)
-/praxis:impedance  — EIS (Nyquist, Bode, circuit fitting)
-/praxis:dsc        — DSC/TGA analysis
-/praxis:mechanical — Stress-strain, DMA
-/praxis:spectro    — FTIR/Raman/UV-Vis
-/praxis:xps        — XPS peak fitting
-/praxis:style      — Set journal style
-/praxis:export     — Publication-quality export
-/praxis:help       — Show all commands
+/praxis:plot        Create any plot from data
+/praxis:fit         Curve fitting (10+ models + custom equations)
+/praxis:peaks       Peak detection, fitting, deconvolution
+/praxis:baseline    Baseline correction (polynomial, ALS, Shirley, SNIP)
+/praxis:fft         FFT, power spectrum, filtering
+/praxis:smooth      Savitzky-Golay, Gaussian, median, Whittaker
+/praxis:stats       Descriptive stats, t-test, ANOVA, regression
+/praxis:batch       Process multiple files with same pipeline
+/praxis:template    Save/load analysis pipelines
+/praxis:report      Auto-generate analysis summary
+/praxis:xrd         XRD analysis (Scherrer, Williamson-Hall)
+/praxis:impedance   EIS (Nyquist, Bode, circuit fitting)
+/praxis:dsc         DSC/TGA analysis
+/praxis:mechanical  Stress-strain, DMA
+/praxis:spectro     FTIR/Raman/UV-Vis
+/praxis:xps         XPS peak fitting
+/praxis:style       Set journal style
+/praxis:export      Publication-quality export
+/praxis:help        Show all commands
 ```
 
 ## Data Formats
@@ -110,7 +106,7 @@ Auto-detected: CSV, TSV, TXT, Excel (.xlsx/.xls), JSON, .xy, .dat, .asc, .spe, J
 
 ## Journal Styles
 
-Each `.mplstyle` file precisely matches journal requirements (column widths, font sizes, tick directions, DPI):
+Each `.mplstyle` file matches journal requirements (column widths, font sizes, tick directions, DPI):
 
 ```python
 from core.utils import apply_style
@@ -123,9 +119,9 @@ apply_style("science")  # 90mm column, Helvetica 6pt
 
 All palettes are colourblind-safe:
 
-- **Okabe-Ito** (default) — 8 colours, widely used in scientific publishing
-- **Tol Bright / Tol Muted** — Paul Tol's optimised palettes
-- **uchu** — Perceptually uniform OKLCh palettes (8 categorical + 9 sequential sub-palettes)
+- **Okabe-Ito** (default): 8 colours, widely used in scientific publishing
+- **Tol Bright / Tol Muted**: Paul Tol's optimised palettes
+- **uchu**: Perceptually uniform OKLCh palettes (8 categorical + 9 sequential sub-palettes)
 
 ```python
 from core.utils import set_palette
@@ -135,27 +131,28 @@ set_palette("uchu_blue")   # Sequential: 9 shades light-to-dark
 
 ## Documentation
 
-- **[Cookbook](references/cookbook.md)** — 50+ worked examples, one per technique
-- **[Workflows](references/workflows.md)** — 12 complete multi-step pipelines
-- **[Plot Types](references/plot-types.md)** — All plot types with code examples
-- **[Techniques](references/techniques.md)** — Quick reference for every technique
-- **[Journal Styles](references/journal-styles.md)** — Formatting specs for 9 journals
-- **[Colour Palettes](references/colour-palettes.md)** — Palette reference with hex codes
+- [Cookbook](references/cookbook.md): 50+ worked examples, one per technique
+- [Workflows](references/workflows.md): 12 complete multi-step pipelines
+- [Plot Types](references/plot-types.md): all plot types with code examples
+- [Techniques](references/techniques.md): quick reference for every technique
+- [Journal Styles](references/journal-styles.md): formatting specs for 9 journals
+- [Colour Palettes](references/colour-palettes.md): palette reference with hex codes
 
 ## Project Structure
 
 ```
 praxis/
-├── SKILL.md                    # Skill definition for Claude Code
-├── requirements.txt            # Python dependencies
+├── SKILL.md
+├── requirements.txt
 ├── scripts/
-│   ├── core/                   # loader, plotter, exporter, utils
-│   ├── analysis/               # fitting, peaks, baseline, smoothing, fft, stats, interpolation, normalisation, templates, report
-│   ├── techniques/             # 21 technique-specific modules
-│   └── batch/                  # batch processing
-├── references/                 # User documentation
-├── assets/styles/              # 9 journal .mplstyle files
-└── tests/                      # 95 tests + sample data
+│   ├── core/               loader, plotter, exporter, utils
+│   ├── analysis/           fitting, peaks, baseline, smoothing, fft, stats,
+│   │                       interpolation, normalisation, templates, report
+│   ├── techniques/         21 technique-specific modules
+│   └── batch/              batch processing
+├── references/             user documentation
+├── assets/styles/          9 journal .mplstyle files
+└── tests/                  95 tests + sample data
 ```
 
 ## Dependencies
@@ -194,4 +191,4 @@ Contributions welcome. To add a new technique:
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT
