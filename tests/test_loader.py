@@ -274,6 +274,22 @@ class TestBuiltinSamples:
         # Expect spread in M -> coercivity
         assert (m[near_zero].max() - m[near_zero].min()) > 0.1
 
+    def test_part3_samples_present(self):
+        """Spectroscopy / microscopy / chromatography / mass spec / mechanical extras."""
+        samples = list_samples()
+        for name in ("uvvis_au_np", "nmr_ethanol", "xps_c1s", "eds_nacl",
+                     "afm_profile", "bet_isotherm", "hplc_chromatogram",
+                     "mass_spec_caffeine", "dma_polymer", "hardness_vickers",
+                     "nanoindentation_loaddisp", "thermal_conductivity_pyrex"):
+            assert name in samples
+
+    def test_every_sample_loads(self):
+        """Smoke test: every shipped sample must load without error and be non-empty."""
+        for name in list_samples():
+            df = load_sample(name)
+            assert len(df) > 0, f"sample {name} loaded empty"
+            assert df.shape[1] >= 2, f"sample {name} has fewer than 2 columns"
+
 
 class TestErrorMessages:
     """Test that helpful errors are raised on parse failures."""

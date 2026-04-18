@@ -1,0 +1,9 @@
+# Vickers indentation, true HV~220. Synthetic.
+load_kgf,diagonal_mm
+0.1,0.02842
+0.25,0.04508
+0.5,0.06365
+1.0,0.09095
+2.0,0.13266
+5.0,0.20036
+10.0,0.29444

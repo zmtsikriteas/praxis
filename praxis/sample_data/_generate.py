@@ -290,24 +290,275 @@ def gen_magnetometry() -> None:
 
 
 # ---------------------------------------------------------------------------
+# Spectroscopy extras
+# ---------------------------------------------------------------------------
+
+def gen_uvvis() -> None:
+    """UV-Vis absorption of gold nanoparticles: plasmon at ~520 nm."""
+    rng = np.random.default_rng(13)
+    wl = np.arange(300.0, 800.0, 1.0)
+    A = (
+        1.4 * np.exp(-0.5 * ((wl - 525) / 35) ** 2)
+        + 0.05 * (300 / wl) ** 4   # background
+    )
+    A += rng.normal(0, 0.005, size=wl.size)
+    _save("uvvis_au_np",
+          pd.DataFrame({"wavelength_nm": wl,
+                        "absorbance": A.round(4)}),
+          header="UV-Vis of gold nanoparticles in water. Plasmon ~525 nm. Synthetic.")
+
+
+def gen_nmr() -> None:
+    """1H NMR of ethanol: triplet (CH3), quartet (CH2), broad OH."""
+    rng = np.random.default_rng(14)
+    delta = np.arange(0.0, 8.0, 0.005)
+    # Coupling constants in ppm units (J ~ 7 Hz at 400 MHz -> 0.0175 ppm)
+    j = 0.0175
+    width = 0.005
+
+    def _peak(centre: float, height: float) -> np.ndarray:
+        return height * np.exp(-0.5 * ((delta - centre) / width) ** 2)
+
+    spec = np.zeros_like(delta)
+    # CH3 triplet at 1.18 ppm (1:2:1)
+    spec += _peak(1.18 - j, 1.0) + _peak(1.18, 2.0) + _peak(1.18 + j, 1.0)
+    # CH2 quartet at 3.69 ppm (1:3:3:1)
+    for i, h in zip([-1.5, -0.5, 0.5, 1.5], [0.5, 1.5, 1.5, 0.5]):
+        spec += _peak(3.69 + i * j, h)
+    # OH broad singlet at 2.6 ppm
+    spec += 0.6 * np.exp(-0.5 * ((delta - 2.6) / 0.06) ** 2)
+    spec += rng.normal(0, 0.005, size=delta.size)
+    _save("nmr_ethanol",
+          pd.DataFrame({"chemical_shift_ppm": delta.round(4),
+                        "intensity": spec.round(4)}),
+          header="1H NMR of ethanol in CDCl3, 400 MHz. CH3 triplet, CH2 quartet, OH broad. Synthetic.")
+
+
+def gen_xps() -> None:
+    """XPS C1s region: graphitic + C-O + C=O components on a Shirley background."""
+    rng = np.random.default_rng(15)
+    BE = np.arange(280.0, 295.0, 0.05)
+    components = [(284.6, 8000, 0.9),  # C-C
+                  (286.2, 1800, 1.0),  # C-O
+                  (288.5, 900, 1.1)]   # C=O / O-C=O
+    counts = np.zeros_like(BE)
+    for pos, h, w in components:
+        sigma = w / 2.355
+        counts += h * np.exp(-0.5 * ((BE - pos) / sigma) ** 2)
+    # Shirley-like background that grows on the low-BE side
+    counts += 1500 + 800 * (BE - BE.min()) / (BE.max() - BE.min())
+    counts += rng.normal(0, 25, size=BE.size)
+    _save("xps_c1s",
+          pd.DataFrame({"binding_energy_eV": BE.round(3),
+                        "counts_per_s": counts.round(1)}),
+          header="XPS C1s region with C-C, C-O, C=O components. Synthetic.")
+
+
+def gen_eds() -> None:
+    """EDS spectrum of NaCl: Na K and Cl K lines."""
+    rng = np.random.default_rng(16)
+    E = np.arange(0.0, 10.0, 0.01)
+    peaks = [(1.04, 9000, 0.07),    # Na Ka
+             (2.62, 17000, 0.10),   # Cl Ka
+             (2.81, 2200, 0.10)]    # Cl Kb
+    counts = np.zeros_like(E)
+    for pos, h, w in peaks:
+        counts += h * np.exp(-0.5 * ((E - pos) / (w / 2.355)) ** 2)
+    counts += 60 * np.exp(-E / 2.5) + 30  # bremsstrahlung-ish background
+    counts += rng.normal(0, 8, size=E.size)
+    counts = np.clip(counts, 0, None)
+    _save("eds_nacl",
+          pd.DataFrame({"energy_keV": E.round(3),
+                        "counts": counts.round(1)}),
+          header="EDS spectrum of NaCl: Na Ka 1.04 keV, Cl Ka 2.62 keV. Synthetic.")
+
+
+# ---------------------------------------------------------------------------
+# Microscopy / surface
+# ---------------------------------------------------------------------------
+
+def gen_afm_profile() -> None:
+    """AFM line profile: nm-scale roughness with a few features."""
+    rng = np.random.default_rng(17)
+    x = np.linspace(0, 5.0, 1000)  # microns
+    # Sinusoidal modulation + random roughness
+    z = 8 * np.sin(2 * np.pi * x / 1.2) + 3 * np.sin(2 * np.pi * x / 0.3 + 1)
+    z += rng.normal(0, 1.5, size=x.size)
+    z += np.cumsum(rng.normal(0, 0.05, size=x.size))  # slight drift
+    _save("afm_profile",
+          pd.DataFrame({"x_um": x.round(4),
+                        "height_nm": z.round(3)}),
+          header="AFM line profile, 5 um scan. nm-scale roughness with periodic features. Synthetic.")
+
+
+def gen_bet() -> None:
+    """N2 BET adsorption isotherm: type IV with hysteresis-free uptake."""
+    rng = np.random.default_rng(18)
+    p_p0 = np.linspace(0.005, 0.99, 60)
+    # BET equation rearranged to give n_ads
+    n_m, C = 5.0, 100.0   # monolayer capacity (mmol/g), BET constant
+    n_ads = n_m * C * p_p0 / ((1 - p_p0) * (1 + (C - 1) * p_p0))
+    # Add capillary condensation rise
+    n_ads += 12 / (1 + np.exp(-(p_p0 - 0.55) / 0.08))
+    n_ads *= rng.lognormal(0, 0.005, size=p_p0.size)
+    _save("bet_isotherm",
+          pd.DataFrame({"relative_pressure": p_p0.round(4),
+                        "n_adsorbed_mmol_per_g": n_ads.round(4)}),
+          header="N2 BET isotherm, 77 K. Type IV with capillary condensation around p/p0=0.55. Synthetic.")
+
+
+# ---------------------------------------------------------------------------
+# Chromatography / mass spec
+# ---------------------------------------------------------------------------
+
+def gen_hplc() -> None:
+    """HPLC chromatogram with three resolved peaks of different intensity."""
+    rng = np.random.default_rng(19)
+    t = np.arange(0.0, 15.0, 0.01)
+    peaks = [(3.2, 280, 0.10), (5.6, 420, 0.13), (9.4, 180, 0.18)]
+    signal = np.zeros_like(t)
+    for tr, h, w in peaks:
+        signal += h * np.exp(-0.5 * ((t - tr) / (w / 2.355)) ** 2)
+    signal += 4 + 0.2 * t  # rising baseline
+    signal += rng.normal(0, 0.6, size=t.size)
+    _save("hplc_chromatogram",
+          pd.DataFrame({"time_min": t.round(3),
+                        "absorbance_mAU": signal.round(2)}),
+          header="HPLC chromatogram, 254 nm UV detection, 3 analytes. Synthetic.")
+
+
+def gen_mass_spec() -> None:
+    """Mass spectrum with discrete peaks at known m/z (caffeine fragmentation)."""
+    rng = np.random.default_rng(20)
+    mz = np.arange(40.0, 220.0, 0.02)
+    # Caffeine major ions: 194 (M+), 109, 67, 55, 42
+    peaks = [(194, 100, 0.15), (109, 65, 0.13),
+             (82, 35, 0.12), (67, 28, 0.12),
+             (55, 18, 0.11), (42, 12, 0.10)]
+    intensity = np.zeros_like(mz)
+    for pos, h, w in peaks:
+        intensity += h * np.exp(-0.5 * ((mz - pos) / (w / 2.355)) ** 2)
+    intensity += rng.normal(0, 0.3, size=mz.size).clip(0)
+    _save("mass_spec_caffeine",
+          pd.DataFrame({"mz": mz.round(3),
+                        "rel_intensity_pct": intensity.round(2)}),
+          header="EI-MS of caffeine (M+ at 194). Synthetic.")
+
+
+# ---------------------------------------------------------------------------
+# Mechanical / thermal extras
+# ---------------------------------------------------------------------------
+
+def gen_dma() -> None:
+    """DMA temperature sweep: storage modulus drop + tan delta peak at Tg."""
+    rng = np.random.default_rng(21)
+    T = np.arange(-40.0, 180.0, 1.0)
+    Tg = 65.0  # Tg in C
+    # E' drops two decades around Tg
+    E_prime = 10 ** (3.5 - 2.0 / (1 + np.exp(-(T - Tg) / 6.0)))
+    # tan delta peaks at Tg
+    tan_d = 0.05 + 1.4 * np.exp(-0.5 * ((T - Tg) / 9.0) ** 2)
+    E_prime *= rng.lognormal(0, 0.01, size=T.size)
+    tan_d += rng.normal(0, 0.005, size=T.size)
+    _save("dma_polymer",
+          pd.DataFrame({"temperature_C": T,
+                        "storage_modulus_MPa": E_prime.round(2),
+                        "tan_delta": tan_d.round(4)}),
+          header="DMA temperature sweep, 1 Hz. Tg ~65 C from tan delta peak. Synthetic.")
+
+
+def gen_hardness() -> None:
+    """Vickers hardness: indentation diagonal vs applied load."""
+    rng = np.random.default_rng(22)
+    loads = np.array([0.1, 0.25, 0.5, 1.0, 2.0, 5.0, 10.0])  # kgf
+    HV = 220.0  # true hardness
+    # d (mm) from HV = 1.8544 * F / d^2  -> d = sqrt(1.8544 * F / HV)
+    d_mm = np.sqrt(1.8544 * loads / HV)
+    # Add measurement noise
+    d_mm *= rng.normal(1.0, 0.015, size=loads.size)
+    _save("hardness_vickers",
+          pd.DataFrame({"load_kgf": loads,
+                        "diagonal_mm": d_mm.round(5)}),
+          header="Vickers indentation, true HV~220. Synthetic.")
+
+
+def gen_nanoindentation() -> None:
+    """Load-displacement curve from nanoindentation: loading + holding + unloading."""
+    rng = np.random.default_rng(23)
+    n_load = 200
+    n_hold = 60
+    n_unload = 200
+
+    h_load = np.linspace(0, 250, n_load)        # nm
+    P_load = 0.04 * h_load ** 1.5               # mN, Oliver-Pharr-ish
+    P_hold = np.full(n_hold, P_load[-1])
+    h_hold = np.linspace(h_load[-1], h_load[-1] + 12, n_hold)
+    h_unload = np.linspace(h_hold[-1], 110, n_unload)
+    # Unloading slope steeper than loading (elastic recovery)
+    P_unload = P_hold[-1] * ((h_unload - 110) / (h_unload[0] - 110)) ** 1.4
+
+    h = np.concatenate([h_load, h_hold, h_unload])
+    P = np.concatenate([P_load, P_hold, P_unload])
+    P += rng.normal(0, 0.05, size=h.size)
+    _save("nanoindentation_loaddisp",
+          pd.DataFrame({"depth_nm": h.round(3),
+                        "load_mN": P.round(4)}),
+          header="Nanoindentation load-displacement (load-hold-unload). Synthetic.")
+
+
+def gen_thermal_conductivity() -> None:
+    """Thermal conductivity vs temperature (Pyrex-like: weak T-dependence)."""
+    rng = np.random.default_rng(24)
+    T = np.arange(50, 600, 10.0)  # K
+    # k(T) = k0 + a*T - b*T^2 (very mild)
+    k = 1.05 + 0.0008 * T - 6e-7 * T ** 2
+    k += rng.normal(0, 0.012, size=T.size)
+    _save("thermal_conductivity_pyrex",
+          pd.DataFrame({"temperature_K": T,
+                        "k_W_per_mK": k.round(4)}),
+          header="Thermal conductivity of Pyrex-like glass vs T. Synthetic.")
+
+
+# ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
 
 def main() -> None:
     print(f"Generating sample datasets in {OUT}")
+    # Structural
     gen_xrd()
     gen_saxs()
+    # Thermal
     gen_dsc()
     gen_tga()
+    # Mechanical
     gen_stress_strain()
+    gen_dma()
+    gen_hardness()
+    gen_nanoindentation()
+    # Spectroscopy
     gen_ftir()
     gen_raman()
+    gen_uvvis()
+    gen_nmr()
+    gen_xps()
+    gen_eds()
+    # Electrical
     gen_impedance()
     gen_iv_diode()
     gen_cv()
+    # Dielectric / piezoelectric / magnetic
     gen_dielectric()
     gen_piezo_pe_loop()
     gen_magnetometry()
+    # Microscopy / surface
+    gen_afm_profile()
+    gen_bet()
+    # Chromatography / mass spec
+    gen_hplc()
+    gen_mass_spec()
+    # Thermal transport
+    gen_thermal_conductivity()
     print("Done.")
 
 
