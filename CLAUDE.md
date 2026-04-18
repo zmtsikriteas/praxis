@@ -32,7 +32,7 @@ from praxis.analysis.fitting import fit_curve
 
 ## Dependencies
 
-numpy, scipy, pandas, matplotlib, lmfit, peakutils, openpyxl, uncertainties
+numpy, scipy, pandas, matplotlib, lmfit, openpyxl, uncertainties
 
 Optional: h5py (HDF5 files), pdfplumber (PDF reading)
 
