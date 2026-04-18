@@ -1,0 +1,25 @@
+cff-version: 1.2.0
+message: "If you use Praxis in your research, please cite it as below."
+title: "Praxis: Scientific data analysis and publication-quality plotting"
+abstract: >
+  Praxis is a Python toolkit and natural-language interface for analysing
+  raw experimental data from over 50 characterisation techniques and
+  producing journal-ready figures.
+type: software
+authors:
+  - family-names: Tsikriteas
+    given-names: Zois
+version: "1.0.0"
+date-released: "2026-03-17"
+license: MIT
+repository-code: "https://github.com/zmtsikriteas/praxis"
+url: "https://github.com/zmtsikriteas/praxis"
+keywords:
+  - scientific-computing
+  - data-analysis
+  - matplotlib
+  - characterisation
+  - materials-science
+  - xrd
+  - impedance-spectroscopy
+  - publication-figures
