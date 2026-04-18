@@ -165,13 +165,25 @@ def _load_delimited(
     if header_row is None:
         header_arg = None
 
-    df = pd.read_csv(
-        io.StringIO("\n".join(data_lines)),
-        sep=delimiter,
-        header=header_arg,
-        decimal=decimal,
-        engine="python",
-    )
+    try:
+        df = pd.read_csv(
+            io.StringIO("\n".join(data_lines)),
+            sep=delimiter,
+            header=header_arg,
+            decimal=decimal,
+            engine="python",
+        )
+    except Exception as exc:
+        delim_repr = repr(delimiter)
+        raise ValueError(
+            f"Could not parse {path.name} as delimited text.\n"
+            f"  Detected delimiter: {delim_repr}\n"
+            f"  Detected decimal:   {decimal!r}\n"
+            f"  Skipped header rows: {skip_rows}\n"
+            f"  Underlying error: {exc}\n"
+            f"Try overriding with explicit kwargs, e.g.:\n"
+            f"  load_data('{path.name}', delimiter='\\t', skip_rows=5, decimal=',')"
+        ) from exc
 
     # Generate column names if none
     if header_row is None:
@@ -529,22 +541,69 @@ def _load_clipboard() -> pd.DataFrame:
 # Detection helpers
 # ---------------------------------------------------------------------------
 
-_COMMENT_CHARS = ("#", "%", "!", ";", "//")
+_COMMENT_CHARS = ("#", "%", "!", ";", "//", "*")
 
 
 def _detect_comment_rows(lines: list[str]) -> int:
-    """Count leading comment/metadata lines."""
-    count = 0
-    for line in lines:
+    """Count leading comment/metadata lines.
+
+    Handles three patterns:
+      1. Lines starting with a known comment character.
+      2. Blank lines.
+      3. Instrument metadata blocks (e.g. ``Instrument: XRD-7000``,
+         ``Date: 2024-01-15``) that don't use comment characters but
+         contain mostly non-numeric content.
+
+    Strategy:
+      a. Find the first line that looks like numeric data (>= 2 fields,
+         majority numeric). Call its field-count ``N``.
+      b. Walk back from there. The line immediately before, if present
+         and matching field-count ``N`` with all-text fields, is the
+         column-header row -- keep it. Everything earlier is metadata.
+    """
+    # Quick path: pure comment-char prefix detection
+    def _is_comment(line: str) -> bool:
+        s = line.strip()
+        return not s or any(s.startswith(c) for c in _COMMENT_CHARS)
+
+    # Find first data line
+    data_idx: Optional[int] = None
+    data_field_count = 0
+    for i, line in enumerate(lines):
         stripped = line.strip()
-        if not stripped:
-            count += 1
+        if not stripped or any(stripped.startswith(c) for c in _COMMENT_CHARS):
             continue
-        if any(stripped.startswith(c) for c in _COMMENT_CHARS):
-            count += 1
-            continue
-        break
-    return count
+        fields = [f for f in re.split(r"[\s,;|\t]+", stripped) if f]
+        if len(fields) >= 2:
+            numeric = sum(1 for f in fields if _is_numeric(f))
+            if numeric / len(fields) >= 0.5:
+                data_idx = i
+                data_field_count = len(fields)
+                break
+
+    if data_idx is None:
+        # Fall back to comment-char-only counting
+        count = 0
+        for line in lines:
+            if _is_comment(line):
+                count += 1
+            else:
+                break
+        return count
+
+    # Look one line back: if it has same field count and is all non-numeric,
+    # it is the header row -- include it in the data section.
+    if data_idx > 0:
+        prev = lines[data_idx - 1].strip()
+        if prev and not any(prev.startswith(c) for c in _COMMENT_CHARS):
+            prev_fields = [f for f in re.split(r"[\s,;|\t]+", prev) if f]
+            if (
+                len(prev_fields) == data_field_count
+                and all(not _is_numeric(f) for f in prev_fields)
+            ):
+                return data_idx - 1
+
+    return data_idx
 
 
 def _detect_delimiter(lines: list[str]) -> str:
@@ -623,15 +682,56 @@ def _is_numeric(s: str) -> bool:
 
 
 def _read_raw(path: Path, encoding: Optional[str] = None) -> str:
-    """Read file with encoding fallback."""
-    encodings = [encoding] if encoding else ["utf-8", "latin-1", "cp1252"]
-    for enc in encodings:
+    """Read file with encoding auto-detection and BOM handling.
+
+    Strategy:
+      1. If ``encoding`` is given, use it.
+      2. Otherwise inspect the first bytes for a BOM and pick the encoding
+         it implies (UTF-8, UTF-16-LE, UTF-16-BE).
+      3. Try the common encodings in order: utf-8, utf-8-sig, cp1252,
+         latin-1, utf-16.
+      4. If those all fail and ``charset-normalizer`` is installed, ask
+         it for a best guess.
+    """
+    raw_bytes = path.read_bytes()
+
+    # BOM-based detection
+    if encoding is None:
+        if raw_bytes.startswith(b"\xef\xbb\xbf"):
+            encoding = "utf-8-sig"
+        elif raw_bytes.startswith(b"\xff\xfe") or raw_bytes.startswith(b"\xfe\xff"):
+            encoding = "utf-16"
+
+    if encoding:
         try:
-            return path.read_text(encoding=enc)
+            return raw_bytes.decode(encoding)
+        except (UnicodeDecodeError, LookupError) as exc:
+            raise UnicodeDecodeError(
+                encoding, raw_bytes, 0, 1,
+                f"Cannot decode {path} with requested encoding '{encoding}': {exc}",
+            )
+
+    # Fallback chain
+    for enc in ("utf-8", "utf-8-sig", "cp1252", "latin-1", "utf-16"):
+        try:
+            return raw_bytes.decode(enc)
         except (UnicodeDecodeError, LookupError):
             continue
+
+    # Last resort: charset-normalizer if available
+    try:
+        from charset_normalizer import from_bytes
+        result = from_bytes(raw_bytes).best()
+        if result is not None:
+            print(f"[Praxis] Auto-detected encoding '{result.encoding}' for {path.name}.")
+            return str(result)
+    except ImportError:
+        pass
+
     raise UnicodeDecodeError(
-        "utf-8", b"", 0, 1, f"Cannot decode {path} with any known encoding."
+        "utf-8", raw_bytes[:32], 0, 1,
+        f"Cannot decode {path}. Tried utf-8, utf-8-sig, cp1252, latin-1, utf-16. "
+        f"Install 'charset-normalizer' for broader detection: pip install charset-normalizer",
     )
 
 

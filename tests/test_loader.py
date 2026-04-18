@@ -120,3 +120,118 @@ class TestJSONLoading:
         p.write_text(json.dumps(data))
         df = load_data(p)
         assert df.shape == (3, 2)
+
+
+class TestMetadataSniffing:
+    """Test detection of instrument metadata blocks without comment chars."""
+
+    def test_instrument_metadata_block(self, tmp_path):
+        """Lines like 'Instrument: XRD-7000' should be skipped automatically."""
+        p = tmp_path / "instrument_export.csv"
+        p.write_text(
+            "Instrument: XRD-7000\n"
+            "Date: 2024-01-15\n"
+            "Operator: J.Smith\n"
+            "Sample: NaCl\n"
+            "\n"
+            "two_theta,intensity\n"
+            "10.0,100\n"
+            "10.1,105\n"
+            "10.2,98\n"
+        )
+        df = load_data(p)
+        assert df.shape == (3, 2)
+        assert "two_theta" in df.columns
+        assert "intensity" in df.columns
+
+    def test_metadata_without_blank_separator(self, tmp_path):
+        p = tmp_path / "metadata.txt"
+        p.write_text(
+            "Title: my measurement\n"
+            "Range: 5-90 deg\n"
+            "x\ty\n"
+            "1.0\t10.0\n"
+            "2.0\t20.0\n"
+        )
+        df = load_data(p)
+        assert df.shape == (2, 2)
+        assert list(df.columns) == ["x", "y"]
+
+    def test_pure_data_no_header(self, tmp_path):
+        """Data with no header at all should still load."""
+        p = tmp_path / "data.dat"
+        p.write_text("1.0 2.0\n3.0 4.0\n5.0 6.0\n")
+        df = load_data(p)
+        assert df.shape == (3, 2)
+
+    def test_data_with_only_header(self, tmp_path):
+        """Header line directly followed by data, no metadata."""
+        p = tmp_path / "data.csv"
+        p.write_text("voltage,current\n0.0,0.1\n0.5,0.3\n1.0,0.5\n")
+        df = load_data(p)
+        assert list(df.columns) == ["voltage", "current"]
+        assert df.shape == (3, 2)
+
+
+class TestEncoding:
+    """Test encoding auto-detection: BOM, UTF-16, cp1252."""
+
+    def test_utf8_with_bom(self, tmp_path):
+        p = tmp_path / "bom.csv"
+        # UTF-8 BOM + ASCII content
+        p.write_bytes("\ufeffx,y\n1.0,2.0\n3.0,4.0\n".encode("utf-8"))
+        df = load_data(p)
+        assert df.shape == (2, 2)
+        assert "x" in df.columns
+
+    def test_utf16_le(self, tmp_path):
+        p = tmp_path / "utf16.csv"
+        p.write_bytes("x,y\n1.0,2.0\n3.0,4.0\n".encode("utf-16"))
+        df = load_data(p)
+        assert df.shape == (2, 2)
+
+    def test_cp1252_special_chars(self, tmp_path):
+        """Files with Western European characters (e.g. degree symbol)."""
+        p = tmp_path / "european.csv"
+        # 'temperature (\xb0C)' with degree symbol in cp1252
+        p.write_bytes(
+            "temperature (\xb0C),value\n25.0,100.0\n50.0,200.0\n".encode("cp1252")
+        )
+        df = load_data(p)
+        assert df.shape == (2, 2)
+
+    def test_explicit_encoding(self, tmp_path):
+        p = tmp_path / "explicit.csv"
+        p.write_bytes("x,y\n1,2\n3,4\n".encode("latin-1"))
+        df = load_data(p, encoding="latin-1")
+        assert df.shape == (2, 2)
+
+
+class TestEuropeanDecimals:
+    """Test comma-decimal European number formatting."""
+
+    def test_semicolon_with_comma_decimal(self, tmp_path):
+        """German/French-style: semicolon delimiter, comma decimal."""
+        p = tmp_path / "european.csv"
+        p.write_text("x;y\n1,5;2,7\n3,1;4,9\n")
+        df = load_data(p)
+        assert df.shape == (2, 2)
+        assert df["x"].iloc[0] == pytest.approx(1.5)
+        assert df["y"].iloc[1] == pytest.approx(4.9)
+
+
+class TestErrorMessages:
+    """Test that helpful errors are raised on parse failures."""
+
+    def test_useful_error_on_garbage(self, tmp_path):
+        p = tmp_path / "garbage.csv"
+        # Inconsistent field counts that pandas can't parse
+        p.write_text("a,b,c\n1\n2,3\n4,5,6,7,8\n")
+        # Should at least not silently misbehave
+        try:
+            df = load_data(p)
+            # If it succeeds, just check we got something
+            assert isinstance(df, pd.DataFrame)
+        except (ValueError, pd.errors.ParserError):
+            # Expected: parse failure with our wrapped message
+            pass

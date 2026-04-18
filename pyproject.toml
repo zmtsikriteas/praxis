@@ -51,8 +51,14 @@ dependencies = [
 hdf5 = ["h5py>=3.8"]
 tiff = ["Pillow>=10.0"]
 pdf = ["pdfplumber>=0.10"]
-all = ["h5py>=3.8", "Pillow>=10.0", "pdfplumber>=0.10"]
-test = ["pytest>=7.0"]
+encoding = ["charset-normalizer>=3.0"]
+all = [
+    "h5py>=3.8",
+    "Pillow>=10.0",
+    "pdfplumber>=0.10",
+    "charset-normalizer>=3.0",
+]
+test = ["pytest>=7.0", "charset-normalizer>=3.0"]
 
 [project.urls]
 Homepage = "https://github.com/zmtsikriteas/praxis"
