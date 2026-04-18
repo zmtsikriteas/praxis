@@ -2,7 +2,7 @@
 
 Supports CSV, TSV, TXT, Excel (.xlsx/.xls), JSON, .xy, .dat, .asc, .spe,
 .jdx/.dx (JCAMP-DX), HDF5 (.h5/.hdf5), MATLAB (.mat), Bruker XRD (.brml),
-Gamry (.dta), Bio-Logic (.mpr), and clipboard paste.
+PANalytical XRD (.xrdml), Gamry (.dta), Bio-Logic (.mpr), and clipboard paste.
 """
 
 from __future__ import annotations
@@ -125,6 +125,7 @@ def load_data(
         ".hdf5": _load_hdf5,
         ".mat": _load_mat,
         ".brml": _load_brml,
+        ".xrdml": _load_xrdml,
         ".dta": _load_gamry_dta,
         ".mpr": _load_biologic_mpr,
     }
@@ -477,6 +478,69 @@ def _load_brml(path: Path) -> pd.DataFrame:
 
     n = min(len(two_theta), len(intensity))
     return pd.DataFrame({"2theta": two_theta[:n], "intensity": intensity[:n]})
+
+
+def _load_xrdml(path: Path) -> pd.DataFrame:
+    """Load a PANalytical .xrdml XRD file.
+
+    XRDML is XML; PANalytical software sometimes ships it as a plain XML
+    file and sometimes as a zip archive. The relevant content is one or
+    more ``<dataPoints>`` blocks, each with a ``<positions axis="2Theta">``
+    range and a space-separated ``<intensities>`` array.
+    """
+    if zipfile.is_zipfile(path):
+        with zipfile.ZipFile(path, "r") as zf:
+            xml_name = next(
+                (n for n in zf.namelist() if n.lower().endswith(".xml")),
+                None,
+            )
+            if xml_name is None:
+                raise ValueError(f"No XML found inside zipped XRDML: {path}")
+            xml_content = zf.read(xml_name)
+    else:
+        xml_content = path.read_bytes()
+
+    # Strip XML namespace so element lookups work without verbosity
+    text = xml_content.decode("utf-8", errors="replace")
+    text = re.sub(r'\sxmlns(:\w+)?="[^"]+"', "", text, count=0)
+    root = ET.fromstring(text)
+
+    two_theta_segments: list[np.ndarray] = []
+    intensity_segments: list[np.ndarray] = []
+
+    for dp in root.iter("dataPoints"):
+        # Find the 2theta axis (positions block)
+        start = stop = None
+        for pos in dp.findall("positions"):
+            axis = (pos.get("axis") or "").lower()
+            if axis in ("2theta", "twotheta"):
+                start_el = pos.find("startPosition")
+                stop_el = pos.find("endPosition")
+                if start_el is not None and stop_el is not None:
+                    start = float(start_el.text)
+                    stop = float(stop_el.text)
+                    break
+        intens_el = dp.find("intensities")
+        if intens_el is None:
+            intens_el = dp.find("counts")
+        if intens_el is None or not intens_el.text:
+            continue
+        intensities = np.array(intens_el.text.strip().split(), dtype=float)
+        if start is None or stop is None or intensities.size == 0:
+            continue
+        two_theta = np.linspace(start, stop, intensities.size)
+        two_theta_segments.append(two_theta)
+        intensity_segments.append(intensities)
+
+    if not two_theta_segments:
+        raise ValueError(
+            f"No 2theta/intensity data extracted from XRDML file: {path}. "
+            "The file may use a non-standard layout."
+        )
+
+    two_theta = np.concatenate(two_theta_segments)
+    intensity = np.concatenate(intensity_segments)
+    return pd.DataFrame({"two_theta_deg": two_theta, "intensity": intensity})
 
 
 def _load_gamry_dta(path: Path) -> pd.DataFrame:

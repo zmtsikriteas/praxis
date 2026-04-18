@@ -291,6 +291,69 @@ class TestBuiltinSamples:
             assert df.shape[1] >= 2, f"sample {name} has fewer than 2 columns"
 
 
+class TestPANalyticalXRDML:
+    """Test the PANalytical .xrdml XRD file loader."""
+
+    @staticmethod
+    def _xrdml_text(start=10.0, stop=80.0, intensities=None):
+        if intensities is None:
+            intensities = list(range(50, 50 + 71))  # 71 points for 1-deg step
+        ints = " ".join(str(v) for v in intensities)
+        return f"""<?xml version="1.0" encoding="UTF-8"?>
+<xrdMeasurements xmlns="http://www.xrdml.com/XRDMeasurement/1.5" status="Completed">
+  <xrdMeasurement measurementType="Scan" status="Completed">
+    <usedWavelength intended="K-Alpha 1">
+      <kAlpha1 unit="Angstrom">1.5405980</kAlpha1>
+    </usedWavelength>
+    <scan appendNumber="0" mode="Continuous" scanAxis="2Theta-Omega" status="Completed">
+      <header>
+        <startTimeStamp>2024-01-15T10:00:00+00:00</startTimeStamp>
+      </header>
+      <dataPoints>
+        <positions axis="2Theta" unit="deg">
+          <startPosition>{start}</startPosition>
+          <endPosition>{stop}</endPosition>
+        </positions>
+        <commonCountingTime unit="seconds">10.0</commonCountingTime>
+        <intensities unit="counts">{ints}</intensities>
+      </dataPoints>
+    </scan>
+  </xrdMeasurement>
+</xrdMeasurements>
+"""
+
+    def test_load_plain_xrdml(self, tmp_path):
+        p = tmp_path / "scan.xrdml"
+        p.write_text(self._xrdml_text())
+        df = load_data(p)
+        assert isinstance(df, pd.DataFrame)
+        assert list(df.columns) == ["two_theta_deg", "intensity"]
+        assert len(df) == 71
+        assert df["two_theta_deg"].iloc[0] == pytest.approx(10.0)
+        assert df["two_theta_deg"].iloc[-1] == pytest.approx(80.0)
+
+    def test_load_zipped_xrdml(self, tmp_path):
+        import zipfile
+        p = tmp_path / "scan.xrdml"
+        with zipfile.ZipFile(p, "w") as zf:
+            zf.writestr("Sample.xml", self._xrdml_text(start=20.0, stop=90.0,
+                                                       intensities=list(range(100, 100 + 71))))
+        df = load_data(p)
+        assert df.shape == (71, 2)
+        assert df["two_theta_deg"].iloc[0] == pytest.approx(20.0)
+
+    def test_xrdml_missing_data_raises(self, tmp_path):
+        p = tmp_path / "empty.xrdml"
+        p.write_text(
+            '<?xml version="1.0"?>\n'
+            '<xrdMeasurements xmlns="http://www.xrdml.com/x/1.5">\n'
+            '  <xrdMeasurement><scan/></xrdMeasurement>\n'
+            '</xrdMeasurements>\n'
+        )
+        with pytest.raises(ValueError, match="XRDML"):
+            load_data(p)
+
+
 class TestErrorMessages:
     """Test that helpful errors are raised on parse failures."""
 
