@@ -30,4 +30,4 @@ jobs:
           pip install pytest
 
       - name: Run tests
-        run: pytest tests/ -v
+        run: python -m pytest tests/ -v --tb=short
