@@ -613,21 +613,33 @@ def _load_gamry_dta(path: Path) -> pd.DataFrame:
 
 
 def _load_biologic_mpr(path: Path) -> pd.DataFrame:
-    """Load a Bio-Logic .mpr electrochemistry file (binary format)."""
-    # .mpr is a proprietary binary format. Full parsing is non-trivial.
-    print(
-        "[Praxis] Bio-Logic .mpr binary format is not yet supported.\n"
-        "         Consider exporting the data as CSV/TXT from EC-Lab.\n"
-        "         Alternatively, install the 'galvani' package and convert:\n"
-        "           pip install galvani\n"
-        "           from galvani import BioLogic\n"
-        "           mpr = BioLogic.MPRfile('file.mpr')\n"
-        "           df = pd.DataFrame(mpr.data)"
-    )
-    raise NotImplementedError(
-        f"Bio-Logic .mpr format is not yet supported. Export as CSV from EC-Lab. "
-        f"File: {path}"
-    )
+    """Load a Bio-Logic .mpr electrochemistry file.
+
+    The .mpr format is proprietary and binary. Praxis delegates parsing to
+    the `galvani` package, which must be installed separately:
+
+        pip install praxis-sci[biologic]   # or: pip install galvani
+
+    Returns a DataFrame with one column per channel recorded by EC-Lab
+    (typically time, Ewe, I, cycle, and any additional channels).
+    """
+    try:
+        from galvani import BioLogic
+    except ImportError as exc:
+        raise ImportError(
+            "Reading Bio-Logic .mpr files requires the 'galvani' package. "
+            "Install it with:  pip install galvani  "
+            "(or 'pip install praxis-sci[biologic]')."
+        ) from exc
+
+    mpr = BioLogic.MPRfile(str(path))
+    data = mpr.data
+    # 'data' is a numpy structured array; convert to a DataFrame preserving names
+    if hasattr(data, "dtype") and data.dtype.names:
+        df = pd.DataFrame({name: data[name] for name in data.dtype.names})
+    else:
+        df = pd.DataFrame(data)
+    return _coerce_numeric(df)
 
 
 def _load_clipboard() -> pd.DataFrame:

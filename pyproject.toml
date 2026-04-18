@@ -51,11 +51,13 @@ hdf5 = ["h5py>=3.8"]
 tiff = ["Pillow>=10.0"]
 pdf = ["pdfplumber>=0.10"]
 encoding = ["charset-normalizer>=3.0"]
+biologic = ["galvani>=0.4"]
 all = [
     "h5py>=3.8",
     "Pillow>=10.0",
     "pdfplumber>=0.10",
     "charset-normalizer>=3.0",
+    "galvani>=0.4",
 ]
 test = ["pytest>=7.0", "charset-normalizer>=3.0"]
 

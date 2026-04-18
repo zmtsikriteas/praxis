@@ -354,6 +354,51 @@ class TestPANalyticalXRDML:
             load_data(p)
 
 
+class TestBioLogicMPR:
+    """Test Bio-Logic .mpr loader (monkey-patches galvani to avoid a real file)."""
+
+    def test_mpr_requires_galvani_when_missing(self, tmp_path, monkeypatch):
+        """If galvani is not installed, raise ImportError with the install hint."""
+        import sys
+        # Remove galvani if previously imported
+        for modname in list(sys.modules):
+            if modname == "galvani" or modname.startswith("galvani."):
+                monkeypatch.delitem(sys.modules, modname, raising=False)
+        # Make future imports of galvani fail
+        real_import = __builtins__["__import__"] if isinstance(__builtins__, dict) else __builtins__.__import__
+        def fake_import(name, *args, **kwargs):
+            if name == "galvani" or name.startswith("galvani."):
+                raise ImportError("No module named 'galvani'")
+            return real_import(name, *args, **kwargs)
+        monkeypatch.setattr("builtins.__import__", fake_import)
+        p = tmp_path / "fake.mpr"
+        p.write_bytes(b"not a real mpr")
+        with pytest.raises(ImportError, match="galvani"):
+            load_data(p)
+
+    def test_mpr_via_galvani_returns_dataframe(self, tmp_path, monkeypatch):
+        """When galvani is available, the loader returns a DataFrame."""
+        np_ = np
+        class FakeMPRfile:
+            def __init__(self, path):
+                self.data = np_.array(
+                    [(0.0, 1.0, 0.10, 1), (0.1, 1.1, 0.11, 1), (0.2, 1.2, 0.12, 1)],
+                    dtype=[("time/s", "f8"), ("Ewe/V", "f8"),
+                           ("I/mA", "f8"), ("cycle number", "i4")],
+                )
+        fake_mod = type(sys.modules["pathlib"])("galvani")
+        fake_mod.BioLogic = type("BioLogic", (), {"MPRfile": FakeMPRfile})
+        monkeypatch.setitem(sys.modules, "galvani", fake_mod)
+        monkeypatch.setitem(sys.modules, "galvani.BioLogic", fake_mod.BioLogic)
+        p = tmp_path / "test.mpr"
+        p.write_bytes(b"dummy")
+        df = load_data(p)
+        assert df.shape == (3, 4)
+        assert "Ewe/V" in df.columns
+        assert "I/mA" in df.columns
+        assert df["cycle number"].iloc[0] == 1
+
+
 class TestErrorMessages:
     """Test that helpful errors are raised on parse failures."""
 
