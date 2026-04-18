@@ -555,48 +555,65 @@ def _detect_comment_rows(lines: list[str]) -> int:
          contain mostly non-numeric content.
 
     Strategy:
-      a. Find the first line that looks like numeric data (>= 2 fields,
-         majority numeric). Call its field-count ``N``.
-      b. Walk back from there. The line immediately before, if present
-         and matching field-count ``N`` with all-text fields, is the
-         column-header row -- keep it. Everything earlier is metadata.
+      a. Filter out blank lines and comment-character lines.
+      b. Detect the actual data delimiter by scoring uniformity of
+         field counts on the surviving lines.
+      c. Find the first surviving line whose fields are majority-numeric
+         under that delimiter. That marks the start of data.
+      d. The line immediately before, if it has the same field count and
+         is all non-numeric, is the column-header row -- include it in
+         the data section.
     """
-    # Quick path: pure comment-char prefix detection
-    def _is_comment(line: str) -> bool:
-        s = line.strip()
+    def _is_comment(s: str) -> bool:
         return not s or any(s.startswith(c) for c in _COMMENT_CHARS)
 
-    # Find first data line
-    data_idx: Optional[int] = None
-    data_field_count = 0
+    # Build list of (original_index, stripped_line) for non-comment lines
+    survivors: list[tuple[int, str]] = []
     for i, line in enumerate(lines):
         stripped = line.strip()
-        if not stripped or any(stripped.startswith(c) for c in _COMMENT_CHARS):
+        if _is_comment(stripped):
             continue
-        fields = [f for f in re.split(r"[\s,;|\t]+", stripped) if f]
-        if len(fields) >= 2:
-            numeric = sum(1 for f in fields if _is_numeric(f))
-            if numeric / len(fields) >= 0.5:
-                data_idx = i
-                data_field_count = len(fields)
-                break
+        survivors.append((i, stripped))
 
-    if data_idx is None:
-        # Fall back to comment-char-only counting
+    if not survivors:
+        # Pure-comment file: count leading comment lines
         count = 0
         for line in lines:
-            if _is_comment(line):
+            if _is_comment(line.strip()):
                 count += 1
             else:
                 break
         return count
 
-    # Look one line back: if it has same field count and is all non-numeric,
-    # it is the header row -- include it in the data section.
+    # Detect the real delimiter using the survivors
+    delim = _detect_delimiter([s for _, s in survivors])
+    sep = re.escape(delim) if delim != r"\s+" else r"\s+"
+
+    def _fields(s: str) -> list[str]:
+        return [f for f in re.split(sep, s) if f]
+
+    # Find first survivor that is majority-numeric under the real delimiter
+    data_idx: Optional[int] = None
+    data_field_count = 0
+    for orig_i, s in survivors:
+        fields = _fields(s)
+        if len(fields) < 2:
+            continue
+        numeric = sum(1 for f in fields if _is_numeric(f))
+        if numeric / len(fields) >= 0.5:
+            data_idx = orig_i
+            data_field_count = len(fields)
+            break
+
+    if data_idx is None:
+        # No clearly-numeric line found; treat first survivor as data start
+        return survivors[0][0]
+
+    # Walk back one line: if same field count and all non-numeric, keep as header
     if data_idx > 0:
         prev = lines[data_idx - 1].strip()
-        if prev and not any(prev.startswith(c) for c in _COMMENT_CHARS):
-            prev_fields = [f for f in re.split(r"[\s,;|\t]+", prev) if f]
+        if prev and not _is_comment(prev):
+            prev_fields = _fields(prev)
             if (
                 len(prev_fields) == data_field_count
                 and all(not _is_numeric(f) for f in prev_fields)
@@ -607,34 +624,47 @@ def _detect_comment_rows(lines: list[str]) -> int:
 
 
 def _detect_delimiter(lines: list[str]) -> str:
-    """Guess the delimiter from data lines."""
-    candidates = {"\t": 0, ",": 0, ";": 0, " ": 0}
-    sample = lines[:min(20, len(lines))]
+    """Guess the delimiter from data lines.
 
-    for line in sample:
-        line = line.strip()
-        if not line:
+    Scoring strategy: for each candidate delimiter, count the fields it
+    produces on every sampled line. Only lines where it produces >=2
+    fields contribute to the score. The chosen delimiter maximises
+    ``(mean field count / (1 + variance)) * coverage`` -- so it must be
+    consistent and apply to most lines.
+
+    This correctly handles:
+      * Pure CSV / TSV
+      * European data where ``,`` is a decimal and ``;`` is the delimiter
+      * Files with leading metadata lines that contain no delimiters
+    """
+    candidates = ["\t", ";", ",", "|", " "]
+    sample = [line.strip() for line in lines[:30] if line.strip()]
+    if not sample:
+        return r"\s+"
+
+    best_delim = None
+    best_score = -1.0
+    for d in candidates:
+        if d == " ":
+            counts = [len(re.split(r"\s+", line)) for line in sample]
+        else:
+            counts = [line.count(d) + 1 for line in sample]
+        valid = [c for c in counts if c >= 2]
+        if len(valid) < 2:
             continue
-        for delim in candidates:
-            if delim == " ":
-                # Count runs of whitespace as single delimiter
-                candidates[delim] += len(re.split(r"\s+", line)) - 1
-            else:
-                candidates[delim] += line.count(delim)
+        avg = sum(valid) / len(valid)
+        var = sum((v - avg) ** 2 for v in valid) / len(valid)
+        coverage = len(valid) / len(sample)
+        score = (avg / (1.0 + var)) * coverage
+        if score > best_score:
+            best_score = score
+            best_delim = d
 
-    # Remove zero-count candidates
-    candidates = {k: v for k, v in candidates.items() if v > 0}
-    if not candidates:
-        return r"\s+"  # Fallback: any whitespace
-
-    # Tab and comma preferred over space
-    if candidates.get("\t", 0) > 0:
-        return "\t"
-    if candidates.get(",", 0) > 0:
-        return ","
-    if candidates.get(";", 0) > 0:
-        return ";"
-    return r"\s+"
+    if best_delim is None:
+        return r"\s+"
+    if best_delim == " ":
+        return r"\s+"
+    return best_delim
 
 
 def _detect_decimal(lines: list[str], delimiter: str) -> str:
