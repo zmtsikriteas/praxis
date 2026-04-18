@@ -157,15 +157,12 @@ python -m pytest tests/ -v
 
 ## Contributing
 
-Contributions welcome. To add a new technique:
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) for setup, conventions, the
+five-step recipe for adding a new technique, and how to add a new file
+format. New techniques and vendor file-format parsers are the
+highest-leverage contributions.
 
-1. Create `praxis/techniques/your_technique.py` -- follow the existing pattern (dataclass for results, analysis function, summary table).
-2. Add a sample dataset generator to `praxis/sample_data/_generate.py` and run `python -m praxis.sample_data._generate`.
-3. Document it in [`docs/techniques.md`](docs/techniques.md) and add a recipe to [`docs/cookbook.md`](docs/cookbook.md).
-4. Register the slash command in [`SKILL.md`](SKILL.md).
-5. Add tests to `tests/`.
-
-See [`CHANGELOG.md`](CHANGELOG.md) for what's changed and what's coming.
+What's changed and what's coming: [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Cite
 

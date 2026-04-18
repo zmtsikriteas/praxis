@@ -1,0 +1,72 @@
+name: Bug report
+description: Something in Praxis didn't work as expected.
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. The faster Praxis can reproduce it, the faster it gets fixed.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: A short description of the problem.
+      placeholder: load_data crashes on my .xrdml file with a UnicodeDecodeError
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproducer
+    attributes:
+      label: Minimal reproducer
+      description: |
+        The 10-30 lines of Python (and, if possible, the data) needed to trigger the bug.
+        Use `load_sample(...)` if a built-in dataset reproduces it.
+      render: python
+      placeholder: |
+        from praxis.core.loader import load_data
+        df = load_data("my_file.xrdml")
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: What you saw
+      description: The full error message and traceback (or the wrong output).
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+      placeholder: A DataFrame with two_theta_deg and intensity columns.
+    validations:
+      required: true
+
+  - type: input
+    id: praxis_version
+    attributes:
+      label: Praxis version
+      description: Run `pip show praxis-sci` or paste the commit hash.
+      placeholder: 1.0.0 (or main @ abc1234)
+    validations:
+      required: true
+
+  - type: input
+    id: python_os
+    attributes:
+      label: Python version and OS
+      placeholder: Python 3.11 / macOS 14.4 (Apple Silicon)
+    validations:
+      required: true
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else
+      description: Optional context, screenshots, or links to related issues.
