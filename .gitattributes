@@ -1,0 +1,14 @@
+# Normalise line endings to LF on commit, regardless of OS
+* text=auto eol=lf
+
+# Binary files — never normalise
+*.png binary
+*.jpg binary
+*.pdf binary
+*.eps binary
+*.tiff binary
+*.xlsx binary
+*.xls binary
+*.mat binary
+*.h5 binary
+*.hdf5 binary

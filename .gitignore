@@ -39,3 +39,7 @@ test_plots/
 .env
 *.key
 .claude/
+
+# Local workflow / personal helpers
+.clank/
+sync_skill.sh
