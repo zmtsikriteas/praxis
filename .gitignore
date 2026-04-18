@@ -43,3 +43,6 @@ test_plots/
 # Local workflow / personal helpers
 .clank/
 sync_skill.sh
+
+# mkdocs build output
+site/

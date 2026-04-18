@@ -16,7 +16,7 @@ praxis/
 │   ├── techniques/         # 21 technique modules (xrd, impedance, dsc_tga, mechanical, spectroscopy, xps, etc.)
 │   ├── styles/             # 9 journal .mplstyle files
 │   └── batch/              # batch processing
-├── references/             # Quick-reference docs (cookbook, workflows, plot types, techniques, palettes, journal styles)
+├── docs/             # Quick-reference docs (cookbook, workflows, plot types, techniques, palettes, journal styles)
 └── tests/                  # Tests + sample data
 ```
 
@@ -62,5 +62,5 @@ Apply with `apply_style("nature")` before plotting.
 1. Create `praxis/techniques/new_technique.py`
 2. Follow the pattern: dataclass for results, analysis function, print summary table
 3. Add slash command to SKILL.md
-4. Add entry to `references/techniques.md` and `references/cookbook.md`
+4. Add entry to `docs/techniques.md` and `docs/cookbook.md`
 5. Add test with sample data

@@ -177,12 +177,12 @@ set_palette("uchu_blue")   # Sequential: 9 shades light-to-dark
 
 ## Documentation
 
-- [Cookbook](references/cookbook.md): 50+ worked examples, one per technique
-- [Workflows](references/workflows.md): 12 complete multi-step pipelines
-- [Plot Types](references/plot-types.md): all plot types with code examples
-- [Techniques](references/techniques.md): quick reference for every technique
-- [Journal Styles](references/journal-styles.md): formatting specs for 9 journals
-- [Colour Palettes](references/colour-palettes.md): palette reference with hex codes
+- [Cookbook](docs/cookbook.md): 50+ worked examples, one per technique
+- [Workflows](docs/workflows.md): 12 complete multi-step pipelines
+- [Plot Types](docs/plot-types.md): all plot types with code examples
+- [Techniques](docs/techniques.md): quick reference for every technique
+- [Journal Styles](docs/journal-styles.md): formatting specs for 9 journals
+- [Colour Palettes](docs/colour-palettes.md): palette reference with hex codes
 
 ## Project Structure
 
@@ -197,7 +197,7 @@ praxis/
 │   ├── techniques/         21 technique-specific modules
 │   ├── styles/             9 journal .mplstyle files
 │   └── batch/              batch processing
-├── references/             user documentation
+├── docs/             user documentation
 └── tests/                  95 tests + sample data
 ```
 
@@ -232,7 +232,7 @@ Contributions welcome. To add a new technique:
 1. Create `praxis/techniques/your_technique.py`
 2. Follow the existing pattern: dataclass results, analysis functions, summary table printing
 3. Add the slash command to `SKILL.md`
-4. Add a cookbook entry to `references/cookbook.md`
+4. Add a cookbook entry to `docs/cookbook.md`
 5. Add tests to `tests/`
 
 ## License
