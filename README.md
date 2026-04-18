@@ -2,74 +2,22 @@
 
 ![Praxis](docs/banner.jpg)
 
-Scientific data analysis and publication-quality plotting.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue.svg)](https://www.python.org)
+[![Tests](https://github.com/zmtsikriteas/praxis/actions/workflows/tests.yml/badge.svg)](https://github.com/zmtsikriteas/praxis/actions/workflows/tests.yml)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/zmtsikriteas/praxis/pulls)
 
-Praxis (from Greek *praxis*, practice, action) gives researchers a natural-language interface for every characterisation technique they encounter in the lab. Load raw data, run technique-aware analysis, and produce journal-ready figures.
+**Scientific data analysis and publication-quality plotting for 50+ characterisation techniques.**
 
-## Examples
+Load raw lab data in any of 16 formats, run technique-aware analysis, and produce journal-ready figures in nine journal styles -- all from a few lines of Python. Praxis (Greek *praxis*: practice, action) handles the boring parts of every characterisation workflow so you can focus on the science.
 
-### XRD pattern with peak labelling (Nature style)
-
-![XRD](examples/xrd_nature.png)
-
-### Tensile test with modulus and UTS annotation (Elsevier style)
-
-![Stress-strain](examples/stress_strain_elsevier.png)
-
-### Gaussian curve fit with 95% confidence band (RSC style)
-
-![Gaussian fit](examples/gaussian_fit_rsc.png)
-
-### Signal processing: raw, FFT, filtered (IEEE style)
-
-![Signal processing](examples/signal_processing_ieee.png)
-
-### Multi-panel publication figure (Science style)
-
-![Multi-panel](examples/multipanel_science.png)
-
-### 2D contour field map (Springer style)
-
-![Contour](examples/contour_springer.png)
-
-## What It Does
-
-- 36 Python modules covering 50+ characterisation techniques
-- 21 dedicated technique modules with domain-specific analysis
-- 16 data formats supported with auto-detection
-- 15+ plot types including specialised scientific plots
-- 9 journal styles (Nature, Science, ACS, Elsevier, Wiley, RSC, Springer, IEEE, MDPI)
-- Colourblind-safe palettes by default (Okabe-Ito, Tol, uchu)
-- Batch processing across hundreds of files
-- Analysis templates: save pipelines, replay on new data
-- Auto-generated reports in Markdown
-
-## Supported Techniques
-
-| Category | Techniques |
-|----------|-----------|
-| Structural | XRD, SAXS/SANS/WAXS |
-| Microscopy | SEM (grain size, porosity), EDS/EDX, AFM (roughness, profiles) |
-| Spectroscopy | FTIR, Raman, UV-Vis, XPS, NMR, mass spectrometry |
-| Thermal | DSC, TGA, DMA |
-| Mechanical | Tensile, compression, nanoindentation, hardness (Vickers/Rockwell/Brinell) |
-| Electrical | I-V curves, C-V, impedance (EIS), four-point probe, solar cell J-V |
-| Magnetic | VSM/SQUID M-H loops, Curie temperature, Langevin fit |
-| Porosity | BET surface area, BJH pore distribution |
-| Chromatography | GC, HPLC, IC, SEC |
-| Dielectric | Permittivity, loss tangent, Cole-Cole, Curie-Weiss |
-| Piezoelectric | P-E loops, S-E butterfly, impedance resonance |
-| Thermal transport | Laser flash, steady-state conductivity |
-
-## Quick Start
-
-### Installation
+## Install
 
 ```bash
 pip install praxis-sci
 ```
 
-Or install the latest development version from a clone:
+Or install the development version from source:
 
 ```bash
 git clone https://github.com/zmtsikriteas/praxis.git
@@ -77,164 +25,138 @@ cd praxis
 pip install -e .
 ```
 
-### Try it without your own data
+## 30-second example
 
-Praxis ships 25 built-in sample datasets, one per technique. Test any
-recipe immediately:
-
-```python
-from praxis.core.loader import load_sample, list_samples
-from praxis.techniques.xrd import analyse_xrd
-
-print(list_samples())                        # see all available samples
-df = load_sample("xrd")                      # built-in Si pattern
-results = analyse_xrd(df["two_theta_deg"], df["intensity"],
-                      wavelength="Cu_Ka")
-```
-
-### In Python Scripts
+Every technique ships with a built-in sample dataset, so you can try Praxis without supplying your own data:
 
 ```python
-from praxis.core.loader import load_data
-from praxis.core.plotter import plot_data
-from praxis.core.exporter import export_figure
+from praxis.core.loader import load_sample
 from praxis.core.utils import apply_style
-from praxis.analysis.fitting import fit_curve
+from praxis.core.plotter import plot_data
 from praxis.techniques.xrd import analyse_xrd
 
-# Load data
-df = load_data("my_xrd_scan.csv")
+df = load_sample("xrd")                                       # built-in Si pattern
+results = analyse_xrd(df["two_theta_deg"], df["intensity"],
+                      wavelength="Cu_Ka")                     # peak ID + Scherrer
 
-# Analyse
-results = analyse_xrd(df["2theta"], df["intensity"], wavelength="Cu_Ka")
-
-# Plot
-apply_style("nature")
-fig, ax = plot_data(
-    df["2theta"], df["intensity"],
-    kind="line",
-    xlabel="2theta (deg)",
-    ylabel="Intensity (a.u.)",
-    title="XRD Pattern",
-)
-
-# Export
-export_figure(fig, "xrd_pattern.svg", dpi=300, output_dir="figures")
+apply_style("nature")                                          # 89 mm column, Arial 7pt
+fig, ax = plot_data(df["two_theta_deg"], df["intensity"],
+                    xlabel=r"$2\theta$ (deg)",
+                    ylabel="Intensity (a.u.)")
+fig.savefig("xrd.png", dpi=300)
 ```
 
-## Commands
+`list_samples()` prints all 25 available datasets (one per technique).
 
-```
-/praxis:plot        Create any plot from data
-/praxis:fit         Curve fitting (10+ models + custom equations)
-/praxis:peaks       Peak detection, fitting, deconvolution
-/praxis:baseline    Baseline correction (polynomial, ALS, Shirley, SNIP)
-/praxis:fft         FFT, power spectrum, filtering
-/praxis:smooth      Savitzky-Golay, Gaussian, median, Whittaker
-/praxis:stats       Descriptive stats, t-test, ANOVA, regression
-/praxis:batch       Process multiple files with same pipeline
-/praxis:template    Save/load analysis pipelines
-/praxis:report      Auto-generate analysis summary
-/praxis:xrd         XRD analysis (Scherrer, Williamson-Hall)
-/praxis:impedance   EIS (Nyquist, Bode, circuit fitting)
-/praxis:dsc         DSC/TGA analysis
-/praxis:mechanical  Stress-strain, DMA
-/praxis:spectro     FTIR/Raman/UV-Vis
-/praxis:xps         XPS peak fitting
-/praxis:style       Set journal style
-/praxis:export      Publication-quality export
-/praxis:help        Show all commands
-```
+## Gallery
 
-## Data Formats
+<table>
+  <tr>
+    <td><img src="examples/xrd_nature.png" alt="XRD"><br><sub>XRD pattern with peak labelling -- Nature style</sub></td>
+    <td><img src="examples/stress_strain_elsevier.png" alt="Stress-strain"><br><sub>Tensile test with modulus and UTS -- Elsevier style</sub></td>
+    <td><img src="examples/gaussian_fit_rsc.png" alt="Gaussian fit"><br><sub>Gaussian fit with 95% confidence band -- RSC style</sub></td>
+  </tr>
+  <tr>
+    <td><img src="examples/signal_processing_ieee.png" alt="Signal processing"><br><sub>Raw, FFT, filtered -- IEEE style</sub></td>
+    <td><img src="examples/multipanel_science.png" alt="Multi-panel"><br><sub>Multi-panel publication figure -- Science style</sub></td>
+    <td><img src="examples/contour_springer.png" alt="Contour"><br><sub>2D contour field map -- Springer style</sub></td>
+  </tr>
+</table>
 
-Auto-detected: CSV, TSV, TXT, Excel (.xlsx/.xls), JSON, .xy, .dat, .asc, .spe, JCAMP-DX (.jdx/.dx), HDF5 (.h5/.hdf5), MATLAB (.mat), Bruker XRD (.brml), Gamry (.dta), clipboard.
+## Features
 
-## Journal Styles
+- **21 technique modules** with domain-specific analysis (Scherrer/Williamson-Hall for XRD, Tg/Tm/crystallinity for DSC, Tauc/Beer-Lambert for spectroscopy, Shirley/peak fits for XPS, equivalent-circuit fitting for EIS, and more).
+- **16 data formats** auto-detected: CSV, TSV, TXT, Excel, JSON, .xy, .dat, .asc, .spe, JCAMP-DX, HDF5, MATLAB .mat, Bruker .brml, Gamry .dta, clipboard, plus BOM/UTF-16 and European decimal-comma handling.
+- **15+ plot types** including line, scatter, bar, errorbar, histogram, box/violin, contour, heatmap, polar, waterfall, ternary, Smith chart, broken axis, multi-panel.
+- **9 journal styles** matching column widths, fonts, and DPI requirements: Nature, Science, ACS, Elsevier, Wiley, RSC, Springer, IEEE, MDPI.
+- **Colourblind-safe palettes** by default: Okabe-Ito, Tol, uchu (perceptually uniform).
+- **Reproducible exports** in PNG/SVG/PDF/EPS/TIFF, each with a `.meta.json` sidecar capturing the parameters used.
+- **Batch processing** of hundreds of files with a single pipeline; analysis templates save and replay pipelines on new data.
+- **25 built-in sample datasets** so every cookbook recipe is copy-paste runnable.
 
-Each `.mplstyle` file matches journal requirements (column widths, font sizes, tick directions, DPI):
+## Supported techniques
 
-```python
-from core.utils import apply_style
-apply_style("nature")   # 89mm single column, Arial 7pt, 300dpi
-apply_style("acs")      # 3.25in column, Arial 6pt
-apply_style("science")  # 90mm column, Helvetica 6pt
-```
-
-## Colour Palettes
-
-All palettes are colourblind-safe:
-
-- Okabe-Ito (default): 8 colours, widely used in scientific publishing
-- Tol Bright / Tol Muted: Paul Tol's optimised palettes
-- uchu: perceptually uniform OKLCh palettes (8 categorical + 9 sequential sub-palettes)
-
-```python
-from core.utils import set_palette
-set_palette("uchu")        # Categorical: blue, red, green, yellow, purple, orange, pink, grey
-set_palette("uchu_blue")   # Sequential: 9 shades light-to-dark
-```
+| Category          | Techniques                                                                |
+|-------------------|---------------------------------------------------------------------------|
+| Structural        | XRD, SAXS / SANS / WAXS                                                   |
+| Microscopy        | SEM (grain size, porosity), EDS / EDX, AFM (roughness, profiles)          |
+| Spectroscopy      | FTIR, Raman, UV-Vis, XPS, NMR, mass spectrometry                          |
+| Thermal           | DSC, TGA, DMA                                                             |
+| Mechanical        | Tensile, compression, nanoindentation, Vickers / Rockwell / Brinell hardness |
+| Electrical        | I-V, C-V, EIS, four-point probe, solar-cell J-V                           |
+| Magnetic          | VSM / SQUID M-H loops, Curie temperature, Langevin fit                    |
+| Porosity          | BET surface area, BJH pore distribution                                   |
+| Chromatography    | GC, HPLC, IC, SEC                                                         |
+| Dielectric        | Permittivity, loss tangent, Cole-Cole, Curie-Weiss                        |
+| Piezoelectric     | P-E loops, S-E butterfly, impedance resonance                             |
+| Thermal transport | Laser flash, steady-state conductivity                                    |
 
 ## Documentation
 
-- [Cookbook](docs/cookbook.md): 50+ worked examples, one per technique
-- [Workflows](docs/workflows.md): 12 complete multi-step pipelines
-- [Plot Types](docs/plot-types.md): all plot types with code examples
-- [Techniques](docs/techniques.md): quick reference for every technique
-- [Journal Styles](docs/journal-styles.md): formatting specs for 9 journals
-- [Colour Palettes](docs/colour-palettes.md): palette reference with hex codes
+| Doc                                              | Contents                                                                  |
+|--------------------------------------------------|---------------------------------------------------------------------------|
+| [Cookbook](docs/cookbook.md)                     | 50+ worked examples, one per technique: data, analysis, plot, expected output |
+| [Workflows](docs/workflows.md)                   | 12 complete multi-step pipelines from raw data to publication figure      |
+| [Plot types](docs/plot-types.md)                 | All 15+ plot types with runnable code                                     |
+| [Techniques](docs/techniques.md)                 | Quick reference for every supported technique with expected data columns  |
+| [Journal styles](docs/journal-styles.md)         | Column widths, fonts, DPI for 9 journals                                  |
+| [Colour palettes](docs/colour-palettes.md)       | Okabe-Ito, Tol, uchu palettes with hex codes                              |
 
-## Project Structure
+## Use as a Claude Code skill
 
-```
-praxis/
-├── SKILL.md
-├── pyproject.toml
-├── praxis/                 the importable Python package
-│   ├── core/               loader, plotter, exporter, utils
-│   ├── analysis/           fitting, peaks, baseline, smoothing, fft, stats,
-│   │                       interpolation, normalisation, templates, report
-│   ├── techniques/         21 technique-specific modules
-│   ├── styles/             9 journal .mplstyle files
-│   └── batch/              batch processing
-├── docs/             user documentation
-└── tests/                  95 tests + sample data
-```
-
-## Dependencies
+Praxis was built to also work as a Claude Code skill. Sync the repository to your Claude skills folder and you get natural-language slash commands:
 
 ```
-numpy >= 1.24
-scipy >= 1.10
-pandas >= 2.0
-matplotlib >= 3.7
-lmfit >= 1.2
-peakutils >= 1.3
-openpyxl >= 3.1
-uncertainties >= 3.1
+/praxis:plot         Create any plot from data
+/praxis:fit          Curve fitting (10+ models + custom equations)
+/praxis:peaks        Peak detection, fitting, deconvolution
+/praxis:baseline     Baseline correction (polynomial, ALS, Shirley, SNIP)
+/praxis:fft          FFT, power spectrum, filtering
+/praxis:smooth       Savitzky-Golay, Gaussian, median, Whittaker
+/praxis:stats        Descriptive stats, t-test, ANOVA, regression
+/praxis:batch        Process multiple files with the same pipeline
+/praxis:template     Save / load analysis pipelines
+/praxis:report       Auto-generate analysis summary
+/praxis:xrd          XRD analysis (Scherrer, Williamson-Hall)
+/praxis:impedance    EIS (Nyquist, Bode, circuit fitting)
+/praxis:dsc          DSC / TGA analysis
+/praxis:mechanical   Stress-strain, DMA
+/praxis:spectro      FTIR / Raman / UV-Vis
+/praxis:xps          XPS peak fitting
+/praxis:style        Set journal style
+/praxis:export       Publication-quality export
+/praxis:help         Show all commands
 ```
 
-Optional: `h5py` (HDF5 files), `Pillow` (TIFF export)
+See [`SKILL.md`](SKILL.md) for the full skill definition.
 
-## Tests
+## Development
 
 ```bash
-pip install pytest
+git clone https://github.com/zmtsikriteas/praxis.git
+cd praxis
+pip install -e .[test]
 python -m pytest tests/ -v
 ```
 
-95 tests covering all core modules, analysis functions, and technique modules.
+105 tests run on every push to main on Python 3.10, 3.11, and 3.12 (see [Actions](https://github.com/zmtsikriteas/praxis/actions)).
 
 ## Contributing
 
 Contributions welcome. To add a new technique:
 
-1. Create `praxis/techniques/your_technique.py`
-2. Follow the existing pattern: dataclass results, analysis functions, summary table printing
-3. Add the slash command to `SKILL.md`
-4. Add a cookbook entry to `docs/cookbook.md`
-5. Add tests to `tests/`
+1. Create `praxis/techniques/your_technique.py` -- follow the existing pattern (dataclass for results, analysis function, summary table).
+2. Add a sample dataset generator to `praxis/sample_data/_generate.py` and run `python -m praxis.sample_data._generate`.
+3. Document it in [`docs/techniques.md`](docs/techniques.md) and add a recipe to [`docs/cookbook.md`](docs/cookbook.md).
+4. Register the slash command in [`SKILL.md`](SKILL.md).
+5. Add tests to `tests/`.
+
+See [`CHANGELOG.md`](CHANGELOG.md) for what's changed and what's coming.
+
+## Cite
+
+If you use Praxis in research, please cite it via the **Cite this repository** button on the GitHub page (or see [`CITATION.cff`](CITATION.cff)).
 
 ## License
 
-MIT
+[MIT](LICENSE).
