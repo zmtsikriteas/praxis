@@ -50,18 +50,32 @@ fig.savefig("xrd.png", dpi=300)
 
 ## Gallery
 
+Each tile is a complete figure produced by Praxis: real journal style, real analysis output, real annotations.
+
 <table>
   <tr>
-    <td><img src="examples/xrd_nature.png" alt="XRD"><br><sub>XRD pattern with peak labelling -- Nature style</sub></td>
-    <td><img src="examples/stress_strain_elsevier.png" alt="Stress-strain"><br><sub>Tensile test with modulus and UTS -- Elsevier style</sub></td>
-    <td><img src="examples/gaussian_fit_rsc.png" alt="Gaussian fit"><br><sub>Gaussian fit with 95% confidence band -- RSC style</sub></td>
+    <td width="33%"><img src="examples/xrd_nature.png" alt="XRD"><br><sub><b>XRD with peak labels</b> &middot; Nature</sub></td>
+    <td width="33%"><img src="examples/stress_strain_elsevier.png" alt="Stress-strain"><br><sub><b>Tensile test, E and UTS</b> &middot; Elsevier</sub></td>
+    <td width="33%"><img src="examples/gaussian_fit_rsc.png" alt="Gaussian fit"><br><sub><b>Gaussian fit + 95% CI</b> &middot; RSC</sub></td>
   </tr>
   <tr>
-    <td><img src="examples/signal_processing_ieee.png" alt="Signal processing"><br><sub>Raw, FFT, filtered -- IEEE style</sub></td>
-    <td><img src="examples/multipanel_science.png" alt="Multi-panel"><br><sub>Multi-panel publication figure -- Science style</sub></td>
-    <td><img src="examples/contour_springer.png" alt="Contour"><br><sub>2D contour field map -- Springer style</sub></td>
+    <td><img src="examples/signal_processing_ieee.png" alt="Signal processing"><br><sub><b>Raw / FFT / filtered</b> &middot; IEEE</sub></td>
+    <td><img src="examples/multipanel_science.png" alt="Multi-panel"><br><sub><b>Multi-panel figure</b> &middot; Science</sub></td>
+    <td><img src="examples/contour_springer.png" alt="Contour"><br><sub><b>2D contour map</b> &middot; Springer</sub></td>
+  </tr>
+  <tr>
+    <td><img src="examples/eis_acs.png" alt="EIS Nyquist"><br><sub><b>EIS Nyquist plot</b> &middot; ACS</sub></td>
+    <td><img src="examples/dsc_wiley.png" alt="DSC trace"><br><sub><b>DSC: Tg / Tc / Tm</b> &middot; Wiley</sub></td>
+    <td><img src="examples/mh_loop_mdpi.png" alt="M-H loop"><br><sub><b>Ferromagnetic M-H loop</b> &middot; MDPI</sub></td>
+  </tr>
+  <tr>
+    <td><img src="examples/raman_nature.png" alt="Raman"><br><sub><b>Raman of silicon</b> &middot; Nature</sub></td>
+    <td><img src="examples/uvvis_wiley.png" alt="UV-Vis"><br><sub><b>UV-Vis Au plasmon</b> &middot; Wiley</sub></td>
+    <td><img src="examples/cv_ieee.png" alt="Cyclic voltammetry"><br><sub><b>Cyclic voltammetry</b> &middot; IEEE</sub></td>
   </tr>
 </table>
+
+All 12 figures are reproduced by `python examples/generate_examples.py`.
 
 ## Features
 
