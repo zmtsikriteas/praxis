@@ -506,6 +506,28 @@ def gen_nanoindentation() -> None:
           header="Nanoindentation load-displacement (load-hold-unload). Synthetic.")
 
 
+def gen_battery_cycling() -> None:
+    """Synthetic LFP-like cathode cycling: 40 cycles at C/2."""
+    rng = np.random.default_rng(25)
+    n = 40
+    cycle = np.arange(1, n + 1)
+    # Discharge capacity: 150 -> ~128 mAh/g over 40 cycles (fade)
+    q_dis = 150.0 - 0.45 * (cycle - 1) - 0.008 * (cycle - 1) ** 1.5
+    # Formation cycle is a bit lower due to SEI
+    q_dis[0] = 142.0
+    # Charge capacity: a bit higher than discharge (CE < 100%)
+    q_ch = q_dis * (1.0 + np.concatenate(
+        [[0.08], 0.005 * np.exp(-cycle[1:] / 15.0) + 0.005]
+    ))
+    q_ch += rng.normal(0, 0.4, size=n)
+    q_dis += rng.normal(0, 0.4, size=n)
+    _save("battery_cycling",
+          pd.DataFrame({"cycle": cycle,
+                        "charge_capacity_mAh_per_g": q_ch.round(2),
+                        "discharge_capacity_mAh_per_g": q_dis.round(2)}),
+          header="Galvanostatic cycling of an LFP-like cathode, C/2 rate, 40 cycles. Synthetic.")
+
+
 def gen_thermal_conductivity() -> None:
     """Thermal conductivity vs temperature (Pyrex-like: weak T-dependence)."""
     rng = np.random.default_rng(24)
@@ -557,6 +579,8 @@ def main() -> None:
     # Chromatography / mass spec
     gen_hplc()
     gen_mass_spec()
+    # Battery cycling
+    gen_battery_cycling()
     # Thermal transport
     gen_thermal_conductivity()
     print("Done.")

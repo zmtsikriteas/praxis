@@ -1412,6 +1412,53 @@ export_figure(fig, "solar_cell_jv.svg")
 
 ---
 
+## Battery Cycling
+
+### Galvanostatic cycling (capacity, fade, Coulombic efficiency)
+
+**Data:** per-cycle charge / discharge capacity in mAh or mAh/g. File formats: .csv, .xlsx (cycler exports), .mpr (Bio-Logic), .dta (Gamry).
+
+**Load:**
+```python
+df = load_sample("battery_cycling")
+# Or from a Bio-Logic .mpr file:
+# df = load_data("cell_001.mpr")
+```
+
+**Analyse:**
+```python
+from praxis.techniques.battery_cycling import analyse_cycle_summary
+
+results = analyse_cycle_summary(
+    df["cycle"].values,
+    df["charge_capacity_mAh_per_g"].values,
+    df["discharge_capacity_mAh_per_g"].values,
+)
+print(results.table())
+# Returns: per-cycle CycleMetrics, capacity_retention_pct,
+# capacity_fade_pct_per_cycle, mean_coulombic_efficiency
+```
+
+**Differential capacity (dQ/dV):**
+```python
+from praxis.techniques.battery_cycling import compute_dqdv
+
+# Voltage and cumulative capacity from a single half-cycle
+result = compute_dqdv(voltage_V, capacity_mAh, smoothing_window=11)
+# result.peak_voltages -> redox/phase-transition peaks
+```
+
+**Rate capability:**
+```python
+from praxis.techniques.battery_cycling import rate_capability
+
+summary = rate_capability(c_rates=[0.1, 0.5, 1.0, 2.0],
+                          discharge_capacities=[150, 142, 130, 110])
+# summary["retention_pct"] gives % vs the reference (slowest) C-rate
+```
+
+---
+
 ## Magnetic Techniques
 
 ### VSM / SQUID (M-H Loops)
