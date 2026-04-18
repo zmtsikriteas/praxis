@@ -1,3 +1,9 @@
+# Praxis is now a pip-installable package. To install dependencies:
+#
+#   pip install -e .          (development install from a clone)
+#   pip install praxis-sci    (release install from PyPI)
+#
+# This file is kept for users who prefer the classic workflow.
 numpy>=1.24
 scipy>=1.10
 pandas>=2.0

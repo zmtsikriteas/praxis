@@ -91,13 +91,13 @@ plot_data(x, y, fig=fig, ax=axes[0, 0], title="Panel (a)")
 
 ### Nyquist (impedance)
 ```python
-from techniques.impedance import plot_nyquist
+from praxis.techniques.impedance import plot_nyquist
 plot_nyquist(data, fit=fit_result)
 ```
 
 ### Bode (impedance)
 ```python
-from techniques.impedance import plot_bode
+from praxis.techniques.impedance import plot_bode
 plot_bode(data, fit=fit_result)
 ```
 

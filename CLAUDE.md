@@ -9,24 +9,25 @@ Praxis is a scientific data analysis and publication-quality plotting toolkit. I
 ```
 praxis/
 ├── SKILL.md                # Skill definition + slash commands
-├── scripts/
+├── pyproject.toml          # Package metadata for pip install
+├── praxis/                 # The Python package
 │   ├── core/               # loader, plotter, exporter, utils
 │   ├── analysis/           # fitting, peaks, baseline, smoothing, fft, statistics, interpolation, normalisation, templates, report
 │   ├── techniques/         # 21 technique modules (xrd, impedance, dsc_tga, mechanical, spectroscopy, xps, etc.)
+│   ├── styles/             # 9 journal .mplstyle files
 │   └── batch/              # batch processing
 ├── references/             # Quick-reference docs (cookbook, workflows, plot types, techniques, palettes, journal styles)
-├── assets/styles/          # 9 journal .mplstyle files
 └── tests/                  # Tests + sample data
 ```
 
 ## How to Use in Scripts
 
+After `pip install praxis-sci` (or `pip install -e .` from a clone):
+
 ```python
-import sys
-sys.path.insert(0, "path/to/praxis/scripts")
-from core.loader import load_data
-from core.plotter import plot_data
-from analysis.fitting import fit_curve
+from praxis.core.loader import load_data
+from praxis.core.plotter import plot_data
+from praxis.analysis.fitting import fit_curve
 ```
 
 ## Dependencies
@@ -58,7 +59,7 @@ Apply with `apply_style("nature")` before plotting.
 
 ## Adding New Techniques
 
-1. Create `scripts/techniques/new_technique.py`
+1. Create `praxis/techniques/new_technique.py`
 2. Follow the pattern: dataclass for results, analysis function, print summary table
 3. Add slash command to SKILL.md
 4. Add entry to `references/techniques.md` and `references/cookbook.md`

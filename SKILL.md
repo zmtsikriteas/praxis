@@ -105,12 +105,11 @@ Use this skill when:
 
 ## Scripts Location
 
-All Python modules live in `~/Documents/Praxis/scripts/`. Import with:
+Praxis is a Python package. Install once with `pip install praxis-sci`,
+or run from a clone via `pip install -e ~/Documents/Praxis`. Import with:
 ```python
-import sys, os
-sys.path.insert(0, os.path.expanduser("~/Documents/Praxis/scripts"))
-from core.loader import load_data
-from core.plotter import plot_data
+from praxis.core.loader import load_data
+from praxis.core.plotter import plot_data
 ```
 
 ## Journal Styles Available

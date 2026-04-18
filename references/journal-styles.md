@@ -3,7 +3,7 @@
 ## Usage
 
 ```python
-from core.utils import apply_style
+from praxis.core.utils import apply_style
 apply_style("nature")  # Apply before plotting
 ```
 

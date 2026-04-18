@@ -81,7 +81,7 @@ Use for heatmaps, gradient fills, or when you need light-to-dark progression wit
 ## Usage
 
 ```python
-from core.utils import get_palette, set_palette
+from praxis.core.utils import get_palette, set_palette
 
 # Set for all subsequent plots
 set_palette("tol_bright")

@@ -9,16 +9,15 @@ Complete multi-step analysis pipelines from raw data to publication figure. Each
 Load raw XRD data, correct baseline, detect and index peaks, calculate crystallite sizes, run Williamson-Hall analysis, and produce a Nature-style figure.
 
 ```python
-import sys
-sys.path.insert(0, "path/to/praxis/scripts")
+# Install with: pip install praxis-sci
 
-from core.loader import load_data
-from core.plotter import plot_data, plot_with_inset
-from core.exporter import export_figure
-from core.utils import apply_style
-from analysis.baseline import correct_baseline
-from analysis.smoothing import smooth
-from techniques.xrd import analyse_xrd, williamson_hall
+from praxis.core.loader import load_data
+from praxis.core.plotter import plot_data, plot_with_inset
+from praxis.core.exporter import export_figure
+from praxis.core.utils import apply_style
+from praxis.analysis.baseline import correct_baseline
+from praxis.analysis.smoothing import smooth
+from praxis.techniques.xrd import analyse_xrd, williamson_hall
 
 # Step 1: Load data
 df = load_data("sample_xrd.xy")
@@ -75,10 +74,10 @@ export_figure(fig, "xrd_pattern.png", dpi=600)
 Load impedance data, parse into complex impedance, plot Nyquist and Bode, fit equivalent circuit, calculate conductivity, and run Arrhenius analysis across temperatures.
 
 ```python
-from core.loader import load_data
-from core.exporter import export_figure
-from core.utils import apply_style
-from techniques.impedance import (
+from praxis.core.loader import load_data
+from praxis.core.exporter import export_figure
+from praxis.core.utils import apply_style
+from praxis.techniques.impedance import (
     parse_impedance, fit_circuit, plot_nyquist, plot_bode,
     calc_conductivity, arrhenius_conductivity,
 )
@@ -129,7 +128,7 @@ arr = arrhenius_conductivity(temperatures, conductivities)
 # arr["Ea_eV"] = activation energy
 
 # Step 9: Arrhenius plot
-from core.plotter import plot_data
+from praxis.core.plotter import plot_data
 fig_arr, ax_arr = plot_data(arr["x"], arr["y"], kind="scatter",
                             xlabel="1000/T (1/K)", ylabel="ln(sigma*T)")
 import numpy as np
@@ -148,11 +147,11 @@ export_figure(fig_arr, "arrhenius_conductivity.svg")
 Load raw force-displacement data, convert to engineering stress-strain, extract all mechanical properties, and produce an annotated stress-strain curve.
 
 ```python
-from core.loader import load_data
-from core.plotter import plot_data
-from core.exporter import export_figure
-from core.utils import apply_style
-from techniques.mechanical import (
+from praxis.core.loader import load_data
+from praxis.core.plotter import plot_data
+from praxis.core.exporter import export_figure
+from praxis.core.utils import apply_style
+from praxis.techniques.mechanical import (
     analyse_tensile, force_to_stress, displacement_to_strain,
 )
 import numpy as np
@@ -212,11 +211,11 @@ export_figure(fig, "stress_strain_annotated.svg", dpi=300)
 Load DSC data, detect glass transition, melting, and crystallisation, integrate enthalpy, calculate crystallinity, and produce a publication figure.
 
 ```python
-from core.loader import load_data
-from core.plotter import plot_data, create_subplots
-from core.exporter import export_figure
-from core.utils import apply_style
-from techniques.dsc_tga import analyse_dsc
+from praxis.core.loader import load_data
+from praxis.core.plotter import plot_data, create_subplots
+from praxis.core.exporter import export_figure
+from praxis.core.utils import apply_style
+from praxis.techniques.dsc_tga import analyse_dsc
 import numpy as np
 
 # Step 1: Load DSC data
@@ -271,13 +270,13 @@ export_figure(fig, "dsc_analysis.svg", dpi=300)
 Batch-load multiple FTIR spectra, baseline-correct, normalise, overlay on a single plot with automatic peak labels.
 
 ```python
-from core.loader import load_data
-from core.plotter import overlay_plots
-from core.exporter import export_figure
-from core.utils import apply_style
-from analysis.baseline import correct_baseline
-from analysis.normalisation import normalise
-from techniques.spectroscopy import analyse_ftir
+from praxis.core.loader import load_data
+from praxis.core.plotter import overlay_plots
+from praxis.core.exporter import export_figure
+from praxis.core.utils import apply_style
+from praxis.analysis.baseline import correct_baseline
+from praxis.analysis.normalisation import normalise
+from praxis.techniques.spectroscopy import analyse_ftir
 
 # Step 1: Load multiple spectra
 files = ["sample_A.csv", "sample_B.csv", "sample_C.csv"]
@@ -337,11 +336,11 @@ export_figure(fig, "ftir_comparison.svg", dpi=300)
 Load survey scan, calibrate binding energy, identify elements, quantify atomic percentages, then fit high-resolution C 1s region.
 
 ```python
-from core.loader import load_data
-from core.plotter import plot_data, create_subplots
-from core.exporter import export_figure
-from core.utils import apply_style
-from techniques.xps import analyse_survey, fit_highres, calibrate_be
+from praxis.core.loader import load_data
+from praxis.core.plotter import plot_data, create_subplots
+from praxis.core.exporter import export_figure
+from praxis.core.utils import apply_style
+from praxis.techniques.xps import analyse_survey, fit_highres, calibrate_be
 import numpy as np
 
 # Step 1: Load survey scan
@@ -402,11 +401,11 @@ export_figure(fig3, "xps_composition.svg")
 Load J-V curve, extract all figures of merit, plot with power curve overlay.
 
 ```python
-from core.loader import load_data
-from core.plotter import create_subplots
-from core.exporter import export_figure
-from core.utils import apply_style
-from techniques.iv_curves import analyse_solar_cell
+from praxis.core.loader import load_data
+from praxis.core.plotter import create_subplots
+from praxis.core.exporter import export_figure
+from praxis.core.utils import apply_style
+from praxis.techniques.iv_curves import analyse_solar_cell
 import numpy as np
 
 # Step 1: Load J-V data
@@ -468,11 +467,11 @@ export_figure(fig, "solar_cell_jv.svg", dpi=300)
 Load nitrogen adsorption isotherm, classify isotherm type, perform BET analysis, calculate pore size distribution (BJH), and produce a two-panel figure.
 
 ```python
-from core.loader import load_data
-from core.plotter import create_subplots
-from core.exporter import export_figure
-from core.utils import apply_style
-from techniques.bet import (
+from praxis.core.loader import load_data
+from praxis.core.plotter import create_subplots
+from praxis.core.exporter import export_figure
+from praxis.core.utils import apply_style
+from praxis.techniques.bet import (
     analyse_bet, bjh_pore_distribution,
     classify_isotherm, total_pore_volume,
 )
@@ -532,13 +531,13 @@ export_figure(fig, "bet_analysis.svg", dpi=300)
 Combine XRD, SEM grain size, and EDS composition into a single markdown report with embedded figures.
 
 ```python
-from core.loader import load_data
-from core.plotter import plot_data
-from core.exporter import export_figure
-from core.utils import apply_style
-from techniques.xrd import analyse_xrd
-from techniques.sem_eds import grain_size_line_intercept, parse_eds_composition
-from analysis.report import AnalysisReport
+from praxis.core.loader import load_data
+from praxis.core.plotter import plot_data
+from praxis.core.exporter import export_figure
+from praxis.core.utils import apply_style
+from praxis.techniques.xrd import analyse_xrd
+from praxis.techniques.sem_eds import grain_size_line_intercept, parse_eds_composition
+from praxis.analysis.report import AnalysisReport
 
 # Step 1: XRD analysis
 df_xrd = load_data("sample_xrd.xy")
@@ -606,11 +605,11 @@ print(f"Report length: {len(md)} characters")
 Process 20 XRD files with the same pipeline, extract a parameter table, and create an overlay plot.
 
 ```python
-from core.loader import load_data
-from core.exporter import export_figure
-from core.utils import apply_style
-from batch.batch import load_batch, batch_analyse, batch_overlay, extract_parameters
-from techniques.xrd import analyse_xrd
+from praxis.core.loader import load_data
+from praxis.core.exporter import export_figure
+from praxis.core.utils import apply_style
+from praxis.batch.batch import load_batch, batch_analyse, batch_overlay, extract_parameters
+from praxis.techniques.xrd import analyse_xrd
 import numpy as np
 
 # Step 1: Batch load all .xy files from a directory
@@ -650,7 +649,7 @@ fig, ax = batch_overlay(
 export_figure(fig, "xrd_batch_overlay.svg", dpi=300)
 
 # Step 6: Waterfall plot (offset stacked)
-from core.plotter import plot_data
+from praxis.core.plotter import plot_data
 apply_style("nature")
 y_datasets = [df.iloc[:, 1].values for df in datasets.values()]
 x_common = list(datasets.values())[0].iloc[:, 0].values
@@ -669,11 +668,11 @@ export_figure(fig2, "xrd_waterfall.svg", dpi=300)
 Load repeat measurements from multiple samples, compute descriptive statistics, test for normality, run ANOVA, and produce a box plot with statistical annotations.
 
 ```python
-from core.loader import load_data
-from core.plotter import plot_data
-from core.exporter import export_figure
-from core.utils import apply_style
-from analysis.statistics import descriptive, normality_test, anova, t_test
+from praxis.core.loader import load_data
+from praxis.core.plotter import plot_data
+from praxis.core.exporter import export_figure
+from praxis.core.utils import apply_style
+from praxis.analysis.statistics import descriptive, normality_test, anova, t_test
 import numpy as np
 
 # Step 1: Load data (e.g. hardness measurements from 3 sample groups)
@@ -738,12 +737,12 @@ export_figure(fig, "statistical_comparison.svg", dpi=300)
 Load raw sensor data (e.g. piezoelectric accelerometer), compute FFT, identify frequency components, apply filtering, and produce time-domain and frequency-domain plots.
 
 ```python
-from core.loader import load_data
-from core.plotter import plot_data, create_subplots
-from core.exporter import export_figure
-from core.utils import apply_style
-from analysis.fft import compute_fft, power_spectrum, filter_signal
-from analysis.smoothing import smooth
+from praxis.core.loader import load_data
+from praxis.core.plotter import plot_data, create_subplots
+from praxis.core.exporter import export_figure
+from praxis.core.utils import apply_style
+from praxis.analysis.fft import compute_fft, power_spectrum, filter_signal
+from praxis.analysis.smoothing import smooth
 import numpy as np
 
 # Step 1: Load raw sensor data

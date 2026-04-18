@@ -64,23 +64,26 @@ Praxis (from Greek *praxis*, practice, action) gives researchers a natural-langu
 ### Installation
 
 ```bash
+pip install praxis-sci
+```
+
+Or install the latest development version from a clone:
+
+```bash
 git clone https://github.com/zmtsikriteas/praxis.git
 cd praxis
-pip install -r requirements.txt
+pip install -e .
 ```
 
 ### In Python Scripts
 
 ```python
-import sys
-sys.path.insert(0, "path/to/praxis/scripts")
-
-from core.loader import load_data
-from core.plotter import plot_data
-from core.exporter import export_figure
-from core.utils import apply_style
-from analysis.fitting import fit_curve
-from techniques.xrd import analyse_xrd
+from praxis.core.loader import load_data
+from praxis.core.plotter import plot_data
+from praxis.core.exporter import export_figure
+from praxis.core.utils import apply_style
+from praxis.analysis.fitting import fit_curve
+from praxis.techniques.xrd import analyse_xrd
 
 # Load data
 df = load_data("my_xrd_scan.csv")
@@ -169,15 +172,15 @@ set_palette("uchu_blue")   # Sequential: 9 shades light-to-dark
 ```
 praxis/
 ├── SKILL.md
-├── requirements.txt
-├── scripts/
+├── pyproject.toml
+├── praxis/                 the importable Python package
 │   ├── core/               loader, plotter, exporter, utils
 │   ├── analysis/           fitting, peaks, baseline, smoothing, fft, stats,
 │   │                       interpolation, normalisation, templates, report
 │   ├── techniques/         21 technique-specific modules
+│   ├── styles/             9 journal .mplstyle files
 │   └── batch/              batch processing
 ├── references/             user documentation
-├── assets/styles/          9 journal .mplstyle files
 └── tests/                  95 tests + sample data
 ```
 
@@ -209,7 +212,7 @@ python -m pytest tests/ -v
 
 Contributions welcome. To add a new technique:
 
-1. Create `scripts/techniques/your_technique.py`
+1. Create `praxis/techniques/your_technique.py`
 2. Follow the existing pattern: dataclass results, analysis functions, summary table printing
 3. Add the slash command to `SKILL.md`
 4. Add a cookbook entry to `references/cookbook.md`

@@ -9,9 +9,9 @@ import pandas as pd
 import pytest
 
 # Add project root to path
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from core.loader import load_data
+from praxis.core.loader import load_data
 
 SAMPLE_DIR = Path(__file__).resolve().parent / "sample_data"
 

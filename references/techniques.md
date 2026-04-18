@@ -15,7 +15,7 @@
 
 **Key functions:**
 ```python
-from techniques.xrd import analyse_xrd, calc_d_spacing, scherrer_size
+from praxis.techniques.xrd import analyse_xrd, calc_d_spacing, scherrer_size
 results = analyse_xrd(two_theta, intensity, wavelength="Cu_Ka")
 ```
 
@@ -70,7 +70,7 @@ results = analyse_xrd(two_theta, intensity, wavelength="Cu_Ka")
 
 **Key functions:**
 ```python
-from techniques.impedance import parse_impedance, fit_circuit, plot_nyquist
+from praxis.techniques.impedance import parse_impedance, fit_circuit, plot_nyquist
 data = parse_impedance(freq, z_real=zr, z_imag=zi)
 fit = fit_circuit(data, circuit="randles")
 plot_nyquist(data, fit=fit)

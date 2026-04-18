@@ -6,9 +6,9 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from analysis.fft import compute_fft, power_spectrum, filter_signal
+from praxis.analysis.fft import compute_fft, power_spectrum, filter_signal
 
 
 @pytest.fixture(autouse=True)

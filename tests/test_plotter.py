@@ -9,9 +9,9 @@ matplotlib.use("Agg")  # Non-interactive backend for testing
 import matplotlib.pyplot as plt
 import pytest
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from core.plotter import plot_data, overlay_plots, plot_contour, create_subplots
+from praxis.core.plotter import plot_data, overlay_plots, plot_contour, create_subplots
 
 
 @pytest.fixture(autouse=True)

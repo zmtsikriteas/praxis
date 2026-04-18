@@ -8,10 +8,21 @@ and Praxis uses [semantic versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- Pip packaging via `pyproject.toml`. Praxis is now installable with
+  `pip install praxis-sci` (or `pip install -e .` from a clone).
+- Optional dependency groups (`hdf5`, `tiff`, `pdf`, `all`, `test`).
 - Continuous integration: pytest runs on Python 3.10, 3.11, and 3.12 on every push.
 - `.gitattributes` to normalise line endings to LF across platforms.
 - `CITATION.cff` so the repository can be cited from GitHub.
 - This changelog.
+
+### Changed
+- Source folder renamed `scripts/` -> `praxis/`. All internal imports now use
+  the `praxis.` prefix (e.g. `from praxis.core.loader import load_data`).
+- Journal styles moved from `assets/styles/` into the package at
+  `praxis/styles/` so they ship with a pip install.
+- CI installs the package via `pip install -e .[test]` instead of
+  `requirements.txt`. The latter is kept for users who prefer it.
 
 ## [1.0.0] - 2026-03-17
 

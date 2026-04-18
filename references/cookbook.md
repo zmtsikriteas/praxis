@@ -18,7 +18,7 @@ df = load_data("scan.xy")
 
 **Analyse:**
 ```python
-from techniques.xrd import analyse_xrd
+from praxis.techniques.xrd import analyse_xrd
 results = analyse_xrd(df["x"], df["y"], wavelength="Cu_Ka")
 # Returns: XRDResults with peaks (position, d-spacing, FWHM, crystallite size)
 # Also runs Williamson-Hall if >= 3 peaks found
@@ -47,7 +47,7 @@ df = load_data("neutron_diffraction.dat")
 
 **Analyse:**
 ```python
-from techniques.xrd import analyse_xrd
+from praxis.techniques.xrd import analyse_xrd
 # Use the appropriate wavelength for your source
 results = analyse_xrd(df["x"], df["y"], wavelength=1.5401)
 # Custom wavelength in Angstrom for neutron/electron source
@@ -76,7 +76,7 @@ df = load_data("saxs_data.csv")
 
 **Analyse:**
 ```python
-from techniques.saxs import analyse_saxs, guinier_analysis, porod_analysis, kratky_plot
+from praxis.techniques.saxs import analyse_saxs, guinier_analysis, porod_analysis, kratky_plot
 results = analyse_saxs(df["q"], df["I"])
 # Returns: SAXSResults with Guinier (Rg, I(0)), Porod (constant, exponent), invariant Q
 
@@ -117,7 +117,7 @@ df = load_data("grain_measurements.csv")
 
 **Analyse:**
 ```python
-from techniques.sem_eds import grain_size_line_intercept, grain_size_area_method, estimate_porosity
+from praxis.techniques.sem_eds import grain_size_line_intercept, grain_size_area_method, estimate_porosity
 
 # Line intercept method
 gs = grain_size_line_intercept(df["intercept_length"], scale_factor=0.5, unit="um")
@@ -156,7 +156,7 @@ df = load_data("eds_composition.csv")
 
 **Analyse:**
 ```python
-from techniques.sem_eds import parse_eds_composition, analyse_eds_line_scan
+from praxis.techniques.sem_eds import parse_eds_composition, analyse_eds_line_scan
 
 # Composition table
 eds = parse_eds_composition(
@@ -198,7 +198,7 @@ height_map = np.loadtxt("afm_map.csv", delimiter=",")
 
 **Analyse:**
 ```python
-from techniques.afm import profile_roughness, surface_roughness, extract_profile
+from praxis.techniques.afm import profile_roughness, surface_roughness, extract_profile
 
 # 1D profile roughness
 rough = profile_roughness(df["height"], unit="nm", detrend=True)
@@ -244,7 +244,7 @@ df = load_data("spectrum.jdx")
 
 **Analyse:**
 ```python
-from techniques.spectroscopy import analyse_ftir, atr_correction, transmittance_to_absorbance
+from praxis.techniques.spectroscopy import analyse_ftir, atr_correction, transmittance_to_absorbance
 
 # Convert transmittance to absorbance if needed
 absorbance = transmittance_to_absorbance(df["transmittance"])
@@ -282,7 +282,7 @@ df = load_data("raman_spectrum.csv")
 
 **Analyse:**
 ```python
-from techniques.spectroscopy import analyse_raman
+from praxis.techniques.spectroscopy import analyse_raman
 
 results = analyse_raman(df["raman_shift"], df["intensity"],
                         baseline_method="als", min_peak_height_pct=5.0)
@@ -312,7 +312,7 @@ df = load_data("uv_vis.csv")
 
 **Analyse:**
 ```python
-from techniques.spectroscopy import beer_lambert, tauc_plot, transmittance_to_absorbance
+from praxis.techniques.spectroscopy import beer_lambert, tauc_plot, transmittance_to_absorbance
 
 # Beer-Lambert: calculate concentration from absorbance
 bl = beer_lambert(absorbance=0.85, molar_absorptivity=1500, path_length=1.0)
@@ -355,7 +355,7 @@ df = load_data("xps_survey.csv")
 
 **Analyse:**
 ```python
-from techniques.xps import analyse_survey, fit_highres, calibrate_be
+from praxis.techniques.xps import analyse_survey, fit_highres, calibrate_be
 
 # Calibrate binding energy to adventitious carbon
 be_cal, shift = calibrate_be(df["binding_energy"], c1s_measured=285.3)
@@ -392,8 +392,8 @@ df = load_data("pl_spectrum.csv")
 
 **Analyse:**
 ```python
-from analysis.peaks import find_peaks_auto
-from analysis.fitting import fit_curve
+from praxis.analysis.peaks import find_peaks_auto
+from praxis.analysis.fitting import fit_curve
 
 # Peak detection
 peaks = find_peaks_auto(df["wavelength"], df["intensity"], min_height_pct=5.0)
@@ -426,7 +426,7 @@ df = load_data("nmr_1h.csv")
 
 **Analyse:**
 ```python
-from techniques.nmr import analyse_nmr, integrate_peaks, reference_spectrum
+from praxis.techniques.nmr import analyse_nmr, integrate_peaks, reference_spectrum
 
 # Reference to TMS
 cs_ref, intens = reference_spectrum(df["ppm"], df["intensity"],
@@ -464,8 +464,8 @@ df = load_data("epr_spectrum.csv")
 
 **Analyse:**
 ```python
-from analysis.peaks import find_peaks_auto
-from analysis.fitting import fit_curve
+from praxis.analysis.peaks import find_peaks_auto
+from praxis.analysis.fitting import fit_curve
 
 # EPR spectra are typically first-derivative -- find zero crossings for g-factor
 peaks = find_peaks_auto(df["field_mT"], df["signal"], min_height_pct=5.0)
@@ -501,7 +501,7 @@ df = load_data("aes_spectrum.csv")
 
 **Analyse:**
 ```python
-from analysis.peaks import find_peaks_auto
+from praxis.analysis.peaks import find_peaks_auto
 
 # Auger spectra are typically plotted as dN(E)/dE
 peaks = find_peaks_auto(df["kinetic_energy"], df["dNdE"], min_height_pct=5.0)
@@ -531,8 +531,8 @@ df = load_data("eels_spectrum.csv")
 
 **Analyse:**
 ```python
-from analysis.peaks import find_peaks_auto
-from analysis.baseline import correct_baseline
+from praxis.analysis.peaks import find_peaks_auto
+from praxis.analysis.baseline import correct_baseline
 
 # Background subtraction (power-law common for EELS)
 corrected, bg, _ = correct_baseline(df["energy_loss"], df["intensity"],
@@ -562,7 +562,7 @@ export_figure(fig, "eels_spectrum.svg")
 
 **Analyse:**
 ```python
-from techniques.sem_eds import parse_eds_composition
+from praxis.techniques.sem_eds import parse_eds_composition
 
 # WDS gives higher accuracy than EDS; same analysis pipeline
 wds = parse_eds_composition(
@@ -586,8 +586,8 @@ df = load_data("icp_results.xlsx")
 
 **Analyse:**
 ```python
-from analysis.statistics import descriptive
-from analysis.fitting import fit_curve
+from praxis.analysis.statistics import descriptive
+from praxis.analysis.fitting import fit_curve
 
 # Descriptive stats on repeat measurements
 for element in df.columns[1:]:
@@ -621,8 +621,8 @@ df = load_data("xrf_spectrum.csv")
 
 **Analyse:**
 ```python
-from analysis.peaks import find_peaks_auto
-from techniques.sem_eds import parse_eds_composition
+from praxis.analysis.peaks import find_peaks_auto
+from praxis.techniques.sem_eds import parse_eds_composition
 
 # Spectrum peak detection
 peaks = find_peaks_auto(df["energy_keV"], df["counts"], min_height_pct=3.0)
@@ -659,7 +659,7 @@ df = load_data("contact_angle.csv")
 
 **Analyse:**
 ```python
-from analysis.statistics import descriptive
+from praxis.analysis.statistics import descriptive
 
 # Static contact angle
 stats = descriptive(df["angle"])
@@ -695,14 +695,14 @@ df = load_data("ellipsometry.csv")
 
 **Analyse:**
 ```python
-from analysis.fitting import fit_curve
+from praxis.analysis.fitting import fit_curve
 
 # Fit Cauchy model for transparent films
 # n(lambda) = A + B/lambda^2 + C/lambda^4
 fit = fit_curve(df["wavelength"], df["psi"], model="polynomial", degree=4)
 
 # Film thickness from interference fringes
-from analysis.peaks import find_peaks_auto
+from praxis.analysis.peaks import find_peaks_auto
 peaks = find_peaks_auto(df["wavelength"], df["psi"])
 ```
 
@@ -733,7 +733,7 @@ df = load_data("profilometry.csv")
 
 **Analyse:**
 ```python
-from techniques.afm import profile_roughness
+from praxis.techniques.afm import profile_roughness
 
 # Same roughness analysis as AFM profiles
 rough = profile_roughness(df["height"], unit="um", detrend=True)
@@ -768,7 +768,7 @@ df = load_data("dsc_scan.csv")
 
 **Analyse:**
 ```python
-from techniques.dsc_tga import analyse_dsc
+from praxis.techniques.dsc_tga import analyse_dsc
 
 results = analyse_dsc(df["temperature"], df["heat_flow"],
                       endotherm_down=True,    # TA Instruments convention
@@ -800,7 +800,7 @@ df = load_data("tga_scan.csv")
 
 **Analyse:**
 ```python
-from techniques.dsc_tga import analyse_tga
+from praxis.techniques.dsc_tga import analyse_tga
 
 results = analyse_tga(df["temperature"], df["mass"],
                       mass_unit="percent", smoothing_window=11)
@@ -838,7 +838,7 @@ df = load_data("dta_scan.csv")
 **Analyse:**
 ```python
 # DTA is analysed the same way as DSC (different signal, same transitions)
-from techniques.dsc_tga import analyse_dsc
+from praxis.techniques.dsc_tga import analyse_dsc
 
 results = analyse_dsc(df["temperature"], df["delta_T"],
                       endotherm_down=True, smoothing_window=11)
@@ -867,14 +867,14 @@ df = load_data("tma_scan.csv")
 
 **Analyse:**
 ```python
-from analysis.fitting import fit_curve
+from praxis.analysis.fitting import fit_curve
 
 # CTE from linear region slope
 fit = fit_curve(df["temperature"], df["displacement"], model="linear")
 # CTE = slope / original_length
 
 # Tg from change in slope
-from analysis.peaks import find_peaks_auto
+from praxis.analysis.peaks import find_peaks_auto
 deriv = np.gradient(df["displacement"], df["temperature"])
 peaks = find_peaks_auto(df["temperature"], np.abs(np.gradient(deriv, df["temperature"])))
 ```
@@ -902,7 +902,7 @@ df = load_data("dma_scan.csv")
 
 **Analyse:**
 ```python
-from techniques.mechanical import analyse_dma
+from praxis.techniques.mechanical import analyse_dma
 
 results = analyse_dma(df["temperature"], df["storage_modulus"],
                       df["loss_modulus"], tan_delta=df["tan_delta"])
@@ -941,7 +941,7 @@ df = load_data("tensile_test.csv")
 
 **Analyse:**
 ```python
-from techniques.mechanical import analyse_tensile, force_to_stress, displacement_to_strain
+from praxis.techniques.mechanical import analyse_tensile, force_to_stress, displacement_to_strain
 
 # Convert raw force/displacement if needed
 stress = force_to_stress(df["force_N"], area=12.57)  # mm2
@@ -970,7 +970,7 @@ export_figure(fig, "stress_strain.svg")
 
 **Analyse:**
 ```python
-from techniques.mechanical import analyse_tensile
+from praxis.techniques.mechanical import analyse_tensile
 
 # Same analysis function works for compression
 results = analyse_tensile(df["strain"], df["stress"], strain_unit="percent")
@@ -992,7 +992,7 @@ df = load_data("hardness_measurements.csv")
 
 **Analyse:**
 ```python
-from analysis.statistics import descriptive
+from praxis.analysis.statistics import descriptive
 
 # Vickers hardness from diagonal measurements
 # HV = 1.8544 * F / d^2 (F in kgf, d in mm)
@@ -1024,7 +1024,7 @@ df = load_data("nanoindent.csv")
 
 **Analyse:**
 ```python
-from techniques.nanoindentation import analyse_indent, batch_indents, creep_analysis
+from praxis.techniques.nanoindentation import analyse_indent, batch_indents, creep_analysis
 
 # Single indent (Oliver-Pharr method)
 result = analyse_indent(df["depth_nm"], df["load_mN"],
@@ -1063,7 +1063,7 @@ df = load_data("fatigue_data.csv")
 
 **Analyse:**
 ```python
-from analysis.fitting import fit_curve
+from praxis.analysis.fitting import fit_curve
 
 # S-N curve (Basquin's law): S = A * N^b
 fit = fit_curve(df["cycles"], df["stress_amplitude"], model="power")
@@ -1094,7 +1094,7 @@ df = load_data("creep_data.csv")
 
 **Analyse:**
 ```python
-from techniques.nanoindentation import creep_analysis
+from praxis.techniques.nanoindentation import creep_analysis
 
 # Logarithmic or power-law creep model
 result = creep_analysis(df["time_s"], df["strain"],
@@ -1125,8 +1125,8 @@ df = load_data("fracture_toughness.csv")
 
 **Analyse:**
 ```python
-from analysis.fitting import fit_curve
-from analysis.statistics import descriptive
+from praxis.analysis.fitting import fit_curve
+from praxis.analysis.statistics import descriptive
 
 # KIc from SENB or compact tension
 # KIc = (P * S) / (B * W^(3/2)) * f(a/W)  -- geometry-dependent
@@ -1158,7 +1158,7 @@ df = load_data("four_point_probe.csv")
 
 **Analyse:**
 ```python
-from techniques.iv_curves import four_point_probe
+from praxis.techniques.iv_curves import four_point_probe
 
 result = four_point_probe(
     df["voltage"], df["current"],
@@ -1191,7 +1191,7 @@ df = load_data("hall_effect.csv")
 
 **Analyse:**
 ```python
-from analysis.fitting import fit_curve
+from praxis.analysis.fitting import fit_curve
 
 # Hall coefficient: RH = VH * t / (I * B)
 fit = fit_curve(df["field_T"], df["hall_voltage_V"], model="linear")
@@ -1226,8 +1226,8 @@ df = load_data("impedance.dta")
 
 **Analyse:**
 ```python
-from techniques.impedance import parse_impedance, fit_circuit, plot_nyquist, plot_bode
-from techniques.impedance import calc_conductivity, arrhenius_conductivity
+from praxis.techniques.impedance import parse_impedance, fit_circuit, plot_nyquist, plot_bode
+from praxis.techniques.impedance import calc_conductivity, arrhenius_conductivity
 
 data = parse_impedance(df["freq"], z_real=df["Zreal"], z_imag=df["Zimag"])
 # Or from modulus/phase: parse_impedance(freq, z_mod=|Z|, z_phase=phase)
@@ -1273,7 +1273,7 @@ df = load_data("iv_curve.csv")
 
 **Analyse:**
 ```python
-from techniques.iv_curves import analyse_iv, analyse_diode
+from praxis.techniques.iv_curves import analyse_iv, analyse_diode
 
 # General I-V analysis
 result = analyse_iv(df["voltage"], df["current"])
@@ -1307,7 +1307,7 @@ df = load_data("cv_measurement.csv")
 
 **Analyse:**
 ```python
-from techniques.cv_measurement import analyse_cv, mott_schottky, doping_profile
+from praxis.techniques.cv_measurement import analyse_cv, mott_schottky, doping_profile
 
 # General C-V analysis
 cv = analyse_cv(df["voltage"], df["capacitance"])
@@ -1353,7 +1353,7 @@ df = load_data("solar_cell_jv.csv")
 
 **Analyse:**
 ```python
-from techniques.iv_curves import analyse_solar_cell
+from praxis.techniques.iv_curves import analyse_solar_cell
 
 result = analyse_solar_cell(df["voltage"], df["current_density"],
                             illumination=100.0)  # mW/cm2 for 1-sun AM1.5
@@ -1391,7 +1391,7 @@ df = load_data("vsm_data.csv")
 
 **Analyse:**
 ```python
-from techniques.magnetometry import analyse_mh_loop, langevin_fit
+from praxis.techniques.magnetometry import analyse_mh_loop, langevin_fit
 
 # M-H loop analysis
 loop = analyse_mh_loop(df["field_Oe"], df["magnetisation_emu_g"])
@@ -1426,7 +1426,7 @@ df = load_data("mt_data.csv")
 
 **Analyse:**
 ```python
-from techniques.magnetometry import curie_temperature
+from praxis.techniques.magnetometry import curie_temperature
 
 tc = curie_temperature(df["temperature_K"], df["magnetisation"],
                        method="inflection")
@@ -1458,7 +1458,7 @@ df = load_data("bet_isotherm.csv")
 
 **Analyse:**
 ```python
-from techniques.bet import analyse_bet, bjh_pore_distribution, classify_isotherm, total_pore_volume
+from praxis.techniques.bet import analyse_bet, bjh_pore_distribution, classify_isotherm, total_pore_volume
 
 # BET surface area
 bet = analyse_bet(df["p_p0"], df["quantity_adsorbed"], adsorbate="N2")
@@ -1517,7 +1517,7 @@ df["diameter_nm"] = -4 * gamma * np.cos(theta) / (df["pressure_MPa"] * 1e6) * 1e
 # Pore size distribution from derivative
 dv = np.gradient(df["intrusion_mL_g"], df["diameter_nm"])
 
-from analysis.statistics import descriptive
+from praxis.analysis.statistics import descriptive
 stats = descriptive(df["diameter_nm"].values)
 ```
 
@@ -1541,7 +1541,7 @@ export_figure(fig, "mercury_psd.svg")
 
 **Analyse:**
 ```python
-from techniques.bet import analyse_bet, bjh_pore_distribution
+from praxis.techniques.bet import analyse_bet, bjh_pore_distribution
 
 # Works with N2, Ar, Kr -- specify the adsorbate
 bet = analyse_bet(df["p_p0"], df["quantity_adsorbed"], adsorbate="Ar")
@@ -1565,7 +1565,7 @@ df = load_data("chromatogram.csv")
 
 **Analyse:**
 ```python
-from techniques.chromatography import analyse_chromatogram, calibration_curve
+from praxis.techniques.chromatography import analyse_chromatogram, calibration_curve
 
 # Peak detection and characterisation
 results = analyse_chromatogram(df["time_min"], df["signal"],
@@ -1607,7 +1607,7 @@ df = load_data("mass_spectrum.csv")
 
 **Analyse:**
 ```python
-from techniques.mass_spec import analyse_spectrum, find_molecular_ion, isotope_pattern, mass_accuracy
+from praxis.techniques.mass_spec import analyse_spectrum, find_molecular_ion, isotope_pattern, mass_accuracy
 
 # Peak detection
 results = analyse_spectrum(df["mz"], df["intensity"], charge=1)
@@ -1649,7 +1649,7 @@ df = load_data("dielectric_data.csv")
 
 **Analyse:**
 ```python
-from techniques.dielectric import parse_dielectric, analyse_dielectric
+from praxis.techniques.dielectric import parse_dielectric, analyse_dielectric
 
 data = parse_dielectric(df["frequency"], df["epsilon_r"],
                         tan_delta=df["tan_delta"])
@@ -1685,7 +1685,7 @@ export_figure(fig, "dielectric_frequency.svg")
 
 **Analyse:**
 ```python
-from techniques.dielectric import cole_cole_data
+from praxis.techniques.dielectric import cole_cole_data
 
 er, ei = cole_cole_data(df["epsilon_r"], df["epsilon_i"])
 ```
@@ -1709,7 +1709,7 @@ export_figure(fig, "cole_cole.svg")
 
 **Analyse:**
 ```python
-from techniques.dielectric import curie_weiss_fit
+from praxis.techniques.dielectric import curie_weiss_fit
 
 cw = curie_weiss_fit(df["temperature"], df["permittivity"],
                      temp_range=(200, 400))  # fit above Tc only
@@ -1731,7 +1731,7 @@ df = load_data("pe_loop.csv")
 
 **Analyse:**
 ```python
-from techniques.piezoelectric import analyse_pe_loop
+from praxis.techniques.piezoelectric import analyse_pe_loop
 
 results = analyse_pe_loop(df["electric_field"], df["polarisation"])
 # Returns: PELoopResults with Pr (remanent), Ec (coercive), Ps (saturation),
@@ -1762,7 +1762,7 @@ df = load_data("se_curve.csv")
 
 **Analyse:**
 ```python
-from techniques.piezoelectric import analyse_se_curve
+from praxis.techniques.piezoelectric import analyse_se_curve
 
 results = analyse_se_curve(df["electric_field"], df["strain"],
                            thickness=1.0)  # mm
@@ -1792,7 +1792,7 @@ df = load_data("resonance.csv")
 
 **Analyse:**
 ```python
-from techniques.piezoelectric import analyse_resonance
+from praxis.techniques.piezoelectric import analyse_resonance
 
 results = analyse_resonance(df["frequency"], df["impedance"],
                             capacitance_free=1e-9)
@@ -1825,7 +1825,7 @@ df = load_data("laser_flash.csv")
 
 **Analyse:**
 ```python
-from techniques.thermal_conductivity import laser_flash_diffusivity, calc_conductivity
+from praxis.techniques.thermal_conductivity import laser_flash_diffusivity, calc_conductivity
 
 # Thermal diffusivity from half-rise time (Parker method)
 alpha = laser_flash_diffusivity(df["time_s"], df["temperature_rise"],
@@ -1857,7 +1857,7 @@ export_figure(fig, "laser_flash.svg")
 
 **Analyse:**
 ```python
-from techniques.thermal_conductivity import steady_state_conductivity, conductivity_vs_temperature
+from praxis.techniques.thermal_conductivity import steady_state_conductivity, conductivity_vs_temperature
 
 # Single measurement (Fourier's law)
 k = steady_state_conductivity(heat_flux=5.0, thickness=0.01,

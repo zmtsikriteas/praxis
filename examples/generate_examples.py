@@ -3,10 +3,8 @@
 import sys
 import os
 
-scripts_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "scripts")
-sys.path.insert(0, scripts_dir)
-# Also add parent so 'scripts.x.y' imports work from technique modules
-sys.path.insert(0, os.path.join(scripts_dir, ".."))
+# Add project root so 'praxis.x.y' imports work when run from any directory
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 import matplotlib
 matplotlib.use("Agg")
@@ -15,10 +13,10 @@ import numpy as np
 import warnings
 warnings.filterwarnings("ignore")
 
-from core.loader import load_data
-from core.plotter import plot_data, overlay_plots, plot_contour, create_subplots
-from core.exporter import export_figure
-from core.utils import apply_style
+from praxis.core.loader import load_data
+from praxis.core.plotter import plot_data, overlay_plots, plot_contour, create_subplots
+from praxis.core.exporter import export_figure
+from praxis.core.utils import apply_style
 
 sample = os.path.join(os.path.dirname(__file__), "..", "tests", "sample_data")
 out = os.path.dirname(__file__)
