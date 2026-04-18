@@ -4,6 +4,40 @@ A technique-by-technique reference showing data formats, loading, analysis, plot
 
 ---
 
+## Quick start with built-in samples
+
+Praxis ships 25 small synthetic datasets covering every technique below. Use them to try any recipe without supplying your own data.
+
+```python
+from praxis.core.loader import load_sample, list_samples
+
+list_samples()
+# -> ['afm_profile', 'bet_isotherm', 'cv_redox', 'dielectric_relaxation',
+#     'dma_polymer', 'dsc_polymer', 'eds_nacl', 'ftir_pmma', 'hardness_vickers',
+#     'hplc_chromatogram', 'impedance_rc', 'iv_diode', 'mass_spec_caffeine',
+#     'mh_loop', 'nanoindentation_loaddisp', 'nmr_ethanol', 'piezo_pe_loop',
+#     'raman_silicon', 'saxs_iq', 'stress_strain_steel', 'tga_pmma',
+#     'thermal_conductivity_pyrex', 'uvvis_au_np', 'xps_c1s', 'xrd_silicon']
+
+df = load_sample("xrd")          # short prefix match -> xrd_silicon.csv
+df = load_sample("dsc_polymer")  # exact name also works
+```
+
+A worked example replacing the first XRD recipe below:
+
+```python
+from praxis.core.loader import load_sample
+from praxis.techniques.xrd import analyse_xrd
+
+df = load_sample("xrd")
+results = analyse_xrd(df["two_theta_deg"], df["intensity"], wavelength="Cu_Ka")
+print(results)  # peak positions, d-spacings, FWHM, crystallite sizes
+```
+
+Every recipe below replaces the placeholder filename with `load_sample("...")` to make it copy-paste runnable.
+
+---
+
 ## Structural Techniques
 
 ### XRD (X-ray Diffraction)

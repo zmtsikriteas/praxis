@@ -77,6 +77,21 @@ cd praxis
 pip install -e .
 ```
 
+### Try it without your own data
+
+Praxis ships 25 built-in sample datasets, one per technique. Test any
+recipe immediately:
+
+```python
+from praxis.core.loader import load_sample, list_samples
+from praxis.techniques.xrd import analyse_xrd
+
+print(list_samples())                        # see all available samples
+df = load_sample("xrd")                      # built-in Si pattern
+results = analyse_xrd(df["two_theta_deg"], df["intensity"],
+                      wavelength="Cu_Ka")
+```
+
 ### In Python Scripts
 
 ```python

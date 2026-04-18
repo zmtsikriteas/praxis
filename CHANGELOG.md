@@ -10,11 +10,23 @@ and Praxis uses [semantic versioning](https://semver.org/).
 ### Added
 - Pip packaging via `pyproject.toml`. Praxis is now installable with
   `pip install praxis-sci` (or `pip install -e .` from a clone).
-- Optional dependency groups (`hdf5`, `tiff`, `pdf`, `all`, `test`).
+- Optional dependency groups (`hdf5`, `tiff`, `pdf`, `encoding`, `all`, `test`).
 - Continuous integration: pytest runs on Python 3.10, 3.11, and 3.12 on every push.
 - `.gitattributes` to normalise line endings to LF across platforms.
 - `CITATION.cff` so the repository can be cited from GitHub.
 - This changelog.
+- 25 built-in sample datasets (one per technique) at `praxis/sample_data/`,
+  shipped with the package. Helper functions:
+  `load_sample('xrd')` and `list_samples()`.
+- Loader hardening:
+  * Smarter detection of instrument metadata blocks that don't use
+    comment characters (e.g. ``Instrument: XRD-7000``).
+  * Score-based delimiter detection that correctly handles European
+    decimal-comma data (e.g. ``x;y\n1,5;2,7``).
+  * BOM-aware encoding detection (UTF-8, UTF-16-LE/BE).
+  * Optional `charset-normalizer` fallback for exotic encodings.
+  * Helpful error message when `pd.read_csv` fails, including the
+    detected delimiter / decimal / skip rows and a copy-pasteable hint.
 
 ### Changed
 - Source folder renamed `scripts/` -> `praxis/`. All internal imports now use
