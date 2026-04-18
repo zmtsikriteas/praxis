@@ -9,7 +9,7 @@
 
 **Scientific data analysis and publication-quality plotting for 50+ characterisation techniques.**
 
-Load raw lab data in any of 16 formats, run technique-aware analysis, and produce journal-ready figures in nine journal styles -- all from a few lines of Python. Praxis (Greek *praxis*: practice, action) handles the boring parts of every characterisation workflow so you can focus on the science.
+Load raw lab data in 17+ formats, run technique-aware analysis, and produce journal-ready figures in nine journal styles -- all from a few lines of Python. Praxis (Greek *praxis*: practice, action) handles the boring parts of every characterisation workflow so you can focus on the science.
 
 ## Install
 
@@ -46,7 +46,7 @@ fig, ax = plot_data(df["two_theta_deg"], df["intensity"],
 fig.savefig("xrd.png", dpi=300)
 ```
 
-`list_samples()` prints all 25 available datasets (one per technique).
+`list_samples()` prints all 26 available datasets (one per technique).
 
 ## Gallery
 
@@ -79,14 +79,14 @@ All 12 figures are reproduced by `python examples/generate_examples.py`.
 
 ## Features
 
-- **21 technique modules** with domain-specific analysis (Scherrer/Williamson-Hall for XRD, Tg/Tm/crystallinity for DSC, Tauc/Beer-Lambert for spectroscopy, Shirley/peak fits for XPS, equivalent-circuit fitting for EIS, and more).
-- **16 data formats** auto-detected: CSV, TSV, TXT, Excel, JSON, .xy, .dat, .asc, .spe, JCAMP-DX, HDF5, MATLAB .mat, Bruker .brml, Gamry .dta, clipboard, plus BOM/UTF-16 and European decimal-comma handling.
-- **15+ plot types** including line, scatter, bar, errorbar, histogram, box/violin, contour, heatmap, polar, waterfall, ternary, Smith chart, broken axis, multi-panel.
+- **22 technique modules** with domain-specific analysis (Scherrer / Williamson-Hall for XRD, Tg / Tm / crystallinity for DSC, Tauc / Beer-Lambert for spectroscopy, Shirley / peak fits for XPS, equivalent-circuit fitting for EIS, capacity fade / dQ-dV for battery cycling, and more).
+- **17+ data formats** auto-detected: CSV, TSV, TXT, Excel, JSON, .xy, .dat, .asc, .spe, JCAMP-DX, HDF5, MATLAB .mat, Bruker .brml, **PANalytical .xrdml** (zipped and plain), Gamry .dta, **Bio-Logic .mpr** (via optional `galvani`), clipboard. Smart handling of BOM-marked files, UTF-16, and European decimal-comma data.
+- **15+ plot types** including line, scatter, bar, errorbar, histogram, box / violin, contour, heatmap, polar, waterfall, ternary, Smith chart, broken axis, multi-panel.
 - **9 journal styles** matching column widths, fonts, and DPI requirements: Nature, Science, ACS, Elsevier, Wiley, RSC, Springer, IEEE, MDPI.
 - **Colourblind-safe palettes** by default: Okabe-Ito, Tol, uchu (perceptually uniform).
-- **Reproducible exports** in PNG/SVG/PDF/EPS/TIFF, each with a `.meta.json` sidecar capturing the parameters used.
+- **Reproducible exports** in PNG / SVG / PDF / EPS / TIFF, each with a `.meta.json` sidecar capturing the parameters used.
 - **Batch processing** of hundreds of files with a single pipeline; analysis templates save and replay pipelines on new data.
-- **25 built-in sample datasets** so every cookbook recipe is copy-paste runnable.
+- **26 built-in sample datasets** so every cookbook recipe is copy-paste runnable.
 
 ## Supported techniques
 
@@ -98,6 +98,7 @@ All 12 figures are reproduced by `python examples/generate_examples.py`.
 | Thermal           | DSC, TGA, DMA                                                             |
 | Mechanical        | Tensile, compression, nanoindentation, Vickers / Rockwell / Brinell hardness |
 | Electrical        | I-V, C-V, EIS, four-point probe, solar-cell J-V                           |
+| Battery           | Galvanostatic cycling (capacity, fade, CE), dQ / dV, rate capability      |
 | Magnetic          | VSM / SQUID M-H loops, Curie temperature, Langevin fit                    |
 | Porosity          | BET surface area, BJH pore distribution                                   |
 | Chromatography    | GC, HPLC, IC, SEC                                                         |
@@ -153,7 +154,7 @@ pip install -e .[test]
 python -m pytest tests/ -v
 ```
 
-105 tests run on every push to main on Python 3.10, 3.11, and 3.12 (see [Actions](https://github.com/zmtsikriteas/praxis/actions)).
+134 tests run on every push to main on Python 3.10, 3.11, and 3.12 (see [Actions](https://github.com/zmtsikriteas/praxis/actions)).
 
 ## Contributing
 
