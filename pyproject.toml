@@ -71,4 +71,4 @@ include = ["praxis*"]
 exclude = ["tests*", "examples*"]
 
 [tool.setuptools.package-data]
-praxis = ["styles/*.mplstyle"]
+praxis = ["styles/*.mplstyle", "sample_data/*.csv"]

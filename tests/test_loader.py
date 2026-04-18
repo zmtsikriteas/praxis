@@ -11,7 +11,7 @@ import pytest
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from praxis.core.loader import load_data
+from praxis.core.loader import load_data, load_sample, list_samples
 
 SAMPLE_DIR = Path(__file__).resolve().parent / "sample_data"
 
@@ -218,6 +218,39 @@ class TestEuropeanDecimals:
         assert df.shape == (2, 2)
         assert df["x"].iloc[0] == pytest.approx(1.5)
         assert df["y"].iloc[1] == pytest.approx(4.9)
+
+
+class TestBuiltinSamples:
+    """Test the load_sample() helper that ships sample datasets with the package."""
+
+    def test_list_samples_nonempty(self):
+        samples = list_samples()
+        assert len(samples) > 0
+        # Part-1 samples
+        for name in ("xrd_silicon", "dsc_polymer", "raman_silicon"):
+            assert name in samples, f"Expected sample '{name}' in {samples}"
+
+    def test_load_by_exact_name(self):
+        df = load_sample("xrd_silicon")
+        assert len(df) > 0
+        assert df.shape[1] == 2
+
+    def test_load_by_prefix(self):
+        """Short prefix should match the first file alphabetically."""
+        df = load_sample("xrd")
+        assert len(df) > 0
+
+    def test_unknown_sample_raises(self):
+        with pytest.raises(FileNotFoundError) as exc:
+            load_sample("definitely_not_a_real_technique")
+        assert "Available" in str(exc.value)
+
+    def test_raman_sample_has_expected_shape(self):
+        df = load_sample("raman")
+        assert df.shape[1] == 2
+        # Should contain the silicon 520 cm-1 peak within the data range
+        col0 = df.iloc[:, 0]
+        assert col0.min() < 520 < col0.max()
 
 
 class TestErrorMessages:

@@ -23,6 +23,42 @@ import pandas as pd
 # Public API
 # ---------------------------------------------------------------------------
 
+def load_sample(name: str) -> pd.DataFrame:
+    """Load a built-in sample dataset by short name.
+
+    Examples
+    --------
+    >>> df = load_sample("xrd")           # -> xrd_silicon.csv
+    >>> df = load_sample("xrd_silicon")   # same file, explicit match
+    >>> df = load_sample("dsc")           # -> dsc_polymer.csv
+
+    Raises
+    ------
+    FileNotFoundError
+        If no sample matches ``name``. The message lists available samples.
+    """
+    sample_dir = Path(__file__).resolve().parent.parent / "sample_data"
+    exact = sample_dir / f"{name}.csv"
+    if exact.exists():
+        return load_data(exact)
+
+    # Prefix match: load_sample("xrd") -> xrd_silicon.csv
+    prefix_matches = sorted(sample_dir.glob(f"{name}*.csv"))
+    if prefix_matches:
+        return load_data(prefix_matches[0])
+
+    available = sorted(p.stem for p in sample_dir.glob("*.csv"))
+    raise FileNotFoundError(
+        f"No sample dataset '{name}'. Available: {', '.join(available) or 'none'}."
+    )
+
+
+def list_samples() -> list[str]:
+    """Return the list of built-in sample dataset names (without extension)."""
+    sample_dir = Path(__file__).resolve().parent.parent / "sample_data"
+    return sorted(p.stem for p in sample_dir.glob("*.csv"))
+
+
 def load_data(
     source: Union[str, Path],
     *,
