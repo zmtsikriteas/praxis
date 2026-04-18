@@ -1,5 +1,7 @@
 # Praxis
 
+![Praxis](docs/banner.jpg)
+
 Scientific data analysis and publication-quality plotting.
 
 Praxis (from Greek *praxis*, practice, action) gives researchers a natural-language interface for every characterisation technique they encounter in the lab. Load raw data, run technique-aware analysis, and produce journal-ready figures.
