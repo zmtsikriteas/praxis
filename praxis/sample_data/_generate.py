@@ -165,6 +165,131 @@ def gen_raman() -> None:
 
 
 # ---------------------------------------------------------------------------
+# Electrical
+# ---------------------------------------------------------------------------
+
+def gen_impedance() -> None:
+    """EIS of a single RC circuit: semicircle in Nyquist plot."""
+    rng = np.random.default_rng(7)
+    f = np.logspace(-1, 6, 80)  # 0.1 Hz to 1 MHz
+    omega = 2 * np.pi * f
+    R, C = 1000.0, 1e-7  # 1 kOhm, 100 nF
+    R_inf = 50.0
+    Z = R_inf + R / (1 + 1j * omega * R * C)
+    Z *= rng.lognormal(0, 0.005, size=f.size)
+    _save("impedance_rc",
+          pd.DataFrame({"frequency_Hz": f,
+                        "z_real_ohm": Z.real.round(3),
+                        "z_imag_ohm": Z.imag.round(3)}),
+          header="EIS of a series R + (R||C) circuit. R_s=50, R_p=1000 ohm, C=100 nF. Synthetic.")
+
+
+def gen_iv_diode() -> None:
+    """I-V curve of a Si diode: Shockley equation with series resistance."""
+    rng = np.random.default_rng(8)
+    V = np.linspace(-0.3, 0.8, 220)
+    I0 = 1e-9   # saturation current (A)
+    n = 1.5     # ideality
+    Vt = 0.02585  # thermal voltage at 300 K
+    Rs = 0.5    # series resistance (ohm)
+    # Iterative: I = I0 * (exp((V - I*Rs)/(n*Vt)) - 1)
+    I = np.zeros_like(V)
+    for _ in range(20):
+        I = I0 * (np.exp((V - I * Rs) / (n * Vt)) - 1)
+    I += rng.normal(0, 1e-7, size=V.size)
+    _save("iv_diode",
+          pd.DataFrame({"voltage_V": V.round(4),
+                        "current_A": I}),
+          header="Si diode I-V (Shockley + series resistance). I0=1e-9 A, n=1.5, Rs=0.5 ohm. Synthetic.")
+
+
+def gen_cv() -> None:
+    """Reversible redox CV: classic duck-shape with peak separation ~59 mV."""
+    rng = np.random.default_rng(9)
+    # Triangular sweep
+    n = 400
+    half = n // 2
+    V = np.concatenate([np.linspace(-0.4, 0.6, half),
+                        np.linspace(0.6, -0.4, n - half)])
+    # Anodic peak at +0.25 V, cathodic at +0.19 V
+    Eox, Ered = 0.25, 0.19
+    ipeak = 80e-6  # 80 uA
+    width = 0.06
+    direction = np.concatenate([np.ones(half), -np.ones(n - half)])
+    I = np.zeros_like(V)
+    forward = direction > 0
+    I[forward] = ipeak * np.exp(-((V[forward] - Eox) / width) ** 2)
+    I[~forward] = -ipeak * np.exp(-((V[~forward] - Ered) / width) ** 2)
+    # Add capacitive baseline
+    I += 5e-6 * direction
+    I += rng.normal(0, 0.5e-6, size=n)
+    _save("cv_redox",
+          pd.DataFrame({"potential_V": V.round(4),
+                        "current_A": I}),
+          header="Cyclic voltammetry of a reversible redox couple. E_ox=0.25 V, E_red=0.19 V. Synthetic.")
+
+
+# ---------------------------------------------------------------------------
+# Dielectric / piezoelectric / magnetic
+# ---------------------------------------------------------------------------
+
+def gen_dielectric() -> None:
+    """Frequency-dependent permittivity with a Debye relaxation."""
+    rng = np.random.default_rng(10)
+    f = np.logspace(0, 9, 90)  # 1 Hz to 1 GHz
+    omega = 2 * np.pi * f
+    eps_inf, eps_s = 4.0, 80.0
+    tau = 1e-6  # relaxation time (s)
+    eps = eps_inf + (eps_s - eps_inf) / (1 + 1j * omega * tau)
+    eps_real = eps.real * rng.lognormal(0, 0.005, size=f.size)
+    eps_imag = -eps.imag * rng.lognormal(0, 0.01, size=f.size)
+    tan_delta = eps_imag / eps_real
+    _save("dielectric_relaxation",
+          pd.DataFrame({"frequency_Hz": f,
+                        "eps_real": eps_real.round(4),
+                        "eps_imag": eps_imag.round(4),
+                        "tan_delta": tan_delta.round(5)}),
+          header="Debye dielectric relaxation. eps_inf=4, eps_s=80, tau=1 us. Synthetic.")
+
+
+def gen_piezo_pe_loop() -> None:
+    """Ferroelectric P-E hysteresis loop (PZT-like)."""
+    rng = np.random.default_rng(11)
+    n = 500
+    # Triangular E sweep over two cycles
+    E = 60e3 * np.sin(np.linspace(0, 4 * np.pi, n))  # V/m
+    # Hysteretic P: arctan with shift depending on dE/dt sign
+    dEdt = np.gradient(E)
+    Ec = 15e3   # coercive field
+    Ps = 25e-2  # spontaneous polarisation (C/m^2)
+    P = Ps * np.tanh((E + np.sign(dEdt) * Ec) / (1.5 * Ec))
+    P += rng.normal(0, 5e-4, size=n)
+    _save("piezo_pe_loop",
+          pd.DataFrame({"E_field_V_per_m": E.round(2),
+                        "polarisation_C_per_m2": P.round(5)}),
+          header="P-E hysteresis loop, PZT-like. Ps=0.25 C/m^2, Ec=15 kV/m. Synthetic.")
+
+
+def gen_magnetometry() -> None:
+    """Ferromagnetic M-H loop with coercivity and saturation."""
+    rng = np.random.default_rng(12)
+    H = np.concatenate([
+        np.linspace(0, 1.0, 100),
+        np.linspace(1.0, -1.0, 200),
+        np.linspace(-1.0, 1.0, 200),
+    ])  # T
+    Hc = 0.05   # coercive field (T)
+    Ms = 1.4    # saturation moment (emu/g)
+    dHdt = np.gradient(H)
+    M = Ms * np.tanh((H - np.sign(dHdt) * Hc) / 0.04)
+    M += rng.normal(0, 0.005, size=H.size)
+    _save("mh_loop",
+          pd.DataFrame({"H_field_T": H.round(5),
+                        "moment_emu_per_g": M.round(5)}),
+          header="Ferromagnetic M-H hysteresis loop. Ms=1.4 emu/g, Hc=0.05 T. Synthetic.")
+
+
+# ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
 
@@ -177,6 +302,12 @@ def main() -> None:
     gen_stress_strain()
     gen_ftir()
     gen_raman()
+    gen_impedance()
+    gen_iv_diode()
+    gen_cv()
+    gen_dielectric()
+    gen_piezo_pe_loop()
+    gen_magnetometry()
     print("Done.")
 
 

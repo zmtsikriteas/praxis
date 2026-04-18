@@ -252,6 +252,28 @@ class TestBuiltinSamples:
         col0 = df.iloc[:, 0]
         assert col0.min() < 520 < col0.max()
 
+    def test_part2_samples_present(self):
+        """Electrical / magnetic / dielectric samples added in part 2."""
+        samples = list_samples()
+        for name in ("impedance_rc", "iv_diode", "cv_redox",
+                     "dielectric_relaxation", "piezo_pe_loop", "mh_loop"):
+            assert name in samples
+
+    def test_impedance_sample_three_columns(self):
+        df = load_sample("impedance_rc")
+        assert df.shape[1] == 3   # frequency + Z' + Z''
+
+    def test_mh_loop_is_hysteretic(self):
+        """Sweeping H up and down should produce different M values at H=0."""
+        df = load_sample("mh_loop")
+        # Find points near zero field
+        h = df.iloc[:, 0].values
+        m = df.iloc[:, 1].values
+        near_zero = abs(h) < 0.01
+        assert near_zero.sum() >= 2
+        # Expect spread in M -> coercivity
+        assert (m[near_zero].max() - m[near_zero].min()) > 0.1
+
 
 class TestErrorMessages:
     """Test that helpful errors are raised on parse failures."""
