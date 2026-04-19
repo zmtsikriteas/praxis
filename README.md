@@ -25,28 +25,89 @@ cd praxis
 pip install -e .
 ```
 
-## 30-second example
+## Using Praxis
 
-Every technique ships with a built-in sample dataset, so you can try Praxis without supplying your own data:
+Every workflow follows the same four steps:
 
-```python
-from praxis.core.loader import load_sample
-from praxis.core.utils import apply_style
-from praxis.core.plotter import plot_data
-from praxis.techniques.xrd import analyse_xrd
-
-df = load_sample("xrd")                                       # built-in Si pattern
-results = analyse_xrd(df["two_theta_deg"], df["intensity"],
-                      wavelength="Cu_Ka")                     # peak ID + Scherrer
-
-apply_style("nature")                                          # 89 mm column, Arial 7pt
-fig, ax = plot_data(df["two_theta_deg"], df["intensity"],
-                    xlabel=r"$2\theta$ (deg)",
-                    ylabel="Intensity (a.u.)")
-fig.savefig("xrd.png", dpi=300)
+```
+load -> analyse -> style + plot -> export
 ```
 
-`list_samples()` prints all 26 available datasets (one per technique).
+### 1. Load
+
+For your own file (any of 17+ formats -- format auto-detected from extension):
+
+```python
+from praxis.core.loader import load_data
+
+df = load_data("my_xrd_scan.xrdml")        # PANalytical XRD
+df = load_data("eis_run.mpr")              # Bio-Logic EIS (needs galvani)
+df = load_data("dsc_polymer.csv")          # plain CSV / TSV / TXT
+print(df.head())                           # inspect column names + first rows
+```
+
+To try Praxis without supplying your own data, use one of the 26 built-in samples:
+
+```python
+from praxis.core.loader import load_sample, list_samples
+
+print(list_samples())              # all available sample names
+df = load_sample("xrd")            # built-in Si pattern
+```
+
+### 2. Analyse
+
+Each technique has its own module under `praxis.techniques`. Pass the columns from
+your DataFrame straight in:
+
+```python
+from praxis.techniques.xrd import analyse_xrd
+from praxis.techniques.dsc_tga import analyse_dsc
+from praxis.techniques.impedance import analyse_eis
+
+xrd = analyse_xrd(df["two_theta_deg"], df["intensity"], wavelength="Cu_Ka")
+print(xrd.table())                 # Scherrer sizes, peak list, Williamson-Hall
+```
+
+For one-off operations on any data (no technique module needed):
+
+```python
+from praxis.analysis.fitting import fit_curve
+from praxis.analysis.peaks import find_peaks_auto
+from praxis.analysis.baseline import correct_baseline
+from praxis.analysis.smoothing import smooth
+```
+
+### 3. Style + plot
+
+Apply a journal style once at the top of your script -- it sets column width,
+fonts, and DPI for everything plotted afterwards. Then `plot_data` handles the
+common cases:
+
+```python
+from praxis.core.utils import apply_style
+from praxis.core.plotter import plot_data
+
+apply_style("nature")              # or: "science", "acs", "elsevier", "wiley",
+                                   #     "rsc", "springer", "ieee", "mdpi"
+
+fig, ax = plot_data(df["two_theta_deg"], df["intensity"],
+                    kind="line",                  # or "scatter", "bar", "errorbar", ...
+                    xlabel=r"$2\theta$ (deg)",
+                    ylabel="Intensity (a.u.)")
+```
+
+### 4. Export
+
+```python
+from praxis.core.exporter import export_figure
+
+export_figure(fig, "xrd.png", dpi=300, output_dir="figures")
+# Also writes figures/xrd.png.meta.json with the parameters used,
+# so the figure is exactly reproducible later.
+```
+
+That's the whole flow. The [cookbook](docs/cookbook.md) has a worked recipe for every technique using the same four-step pattern.
 
 ## Gallery
 
