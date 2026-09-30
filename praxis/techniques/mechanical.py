@@ -12,6 +12,7 @@ from typing import Any, Optional
 
 import numpy as np
 from scipy.integrate import trapezoid
+from scipy.signal import find_peaks
 
 from praxis.core.utils import validate_xy
 from praxis.analysis.smoothing import smooth
@@ -156,7 +157,7 @@ def analyse_tensile(
         results.yield_strength = yield_stress
 
     # Toughness: area under stress-strain curve
-    results.toughness = trapezoid(stress_arr, strain_arr / 100) / 1e6  # MPa * fraction -> MJ/m3
+    results.toughness = trapezoid(stress_arr, strain_arr / 100)  # MPa * fraction = MJ/m3
 
     print(results.table())
     return results

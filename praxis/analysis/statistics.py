@@ -10,6 +10,7 @@ from typing import Any, Optional, Sequence, Union
 import numpy as np
 from scipy import stats as sp_stats
 
+from praxis.core.safe_eval import evaluate, parse_expression
 from praxis.core.utils import validate_array
 
 
@@ -164,7 +165,15 @@ def t_test(
     TestResult
     """
     a = validate_array(a, "a")
-    a = a[~np.isnan(a)]
+    if paired and b is not None:
+        # Drop incomplete pairs together so the pairing is preserved
+        b = validate_array(b, "b")
+        if len(a) != len(b):
+            raise ValueError("Paired t-test requires a and b of equal length.")
+        keep = ~(np.isnan(a) | np.isnan(b))
+        a, b = a[keep], b[keep]
+    else:
+        a = a[~np.isnan(a)]
 
     if b is None:
         # One-sample t-test
@@ -173,8 +182,6 @@ def t_test(
         df = len(a) - 1
         d = (np.mean(a) - mu) / np.std(a, ddof=1) if np.std(a, ddof=1) > 0 else 0
     elif paired:
-        b = validate_array(b, "b")
-        b = b[~np.isnan(b)]
         stat, p = sp_stats.ttest_rel(a, b, alternative=alternative)
         name = "Paired t-test"
         df = len(a) - 1
@@ -377,6 +384,11 @@ def propagate_error(
     from uncertainties import ufloat
     import uncertainties.umath as umath
 
+    code, names = parse_expression(func)
+    missing = [n for n in names if n not in values]
+    if missing:
+        raise ValueError(f"No value given for: {', '.join(missing)}")
+
     # Build uncertain values
     uvars = {}
     for name in values:
@@ -388,10 +400,12 @@ def propagate_error(
         **uvars,
         "exp": umath.exp, "log": umath.log, "log10": umath.log10,
         "sin": umath.sin, "cos": umath.cos, "tan": umath.tan,
-        "sqrt": umath.sqrt, "pi": np.pi, "abs": abs,
+        "sqrt": umath.sqrt, "pi": np.pi, "e": np.e, "abs": abs,
     }
 
-    result = eval(func, {"__builtins__": {}}, namespace)
+    result = evaluate(code, namespace)
+    if not hasattr(result, "nominal_value"):
+        result = ufloat(float(result), 0.0)
     val = result.nominal_value
     unc = result.std_dev
 

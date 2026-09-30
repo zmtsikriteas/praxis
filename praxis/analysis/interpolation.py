@@ -69,11 +69,13 @@ def interpolate(
 
     method = method.lower()
 
+    if fill_value != "extrapolate" and isinstance(fill_value, str):
+        raise ValueError("fill_value must be 'extrapolate' or a number.")
+
+    # Every method is evaluated with extrapolation; out-of-range points are
+    # replaced with fill_value afterwards if requested
     if method == "linear":
-        f = interp1d(x, y, kind="linear", fill_value=fill_value,
-                     bounds_error=False if fill_value != "extrapolate" else False)
-        if fill_value == "extrapolate":
-            f = interp1d(x, y, kind="linear", fill_value="extrapolate", bounds_error=False)
+        f = interp1d(x, y, kind="linear", fill_value="extrapolate", bounds_error=False)
         y_new = f(x_new)
 
     elif method in ("cubic", "cubic_spline"):
@@ -82,12 +84,7 @@ def interpolate(
 
     elif method == "akima":
         ak = Akima1DInterpolator(x, y)
-        y_new = ak(x_new)
-        # Akima doesn't extrapolate by default; fill NaNs with edge values
-        mask = np.isnan(y_new)
-        if mask.any():
-            y_new[x_new < x.min()] = y[0]
-            y_new[x_new > x.max()] = y[-1]
+        y_new = ak(x_new, extrapolate=True)
 
     elif method == "pchip":
         pc = PchipInterpolator(x, y, extrapolate=True)
@@ -98,8 +95,8 @@ def interpolate(
         y_new = f(x_new)
 
     elif method == "spline":
-        s = smoothing if smoothing > 0 else None
-        sp = UnivariateSpline(x, y, s=s)
+        # s=0 forces the spline through every point (exact interpolation)
+        sp = UnivariateSpline(x, y, s=smoothing)
         y_new = sp(x_new)
 
     else:
@@ -107,6 +104,11 @@ def interpolate(
             f"Unknown interpolation method: '{method}'. "
             "Use linear, cubic, akima, pchip, quadratic, or spline."
         )
+
+    y_new = np.asarray(y_new, dtype=float)
+    if fill_value != "extrapolate":
+        y_new = y_new.copy()
+        y_new[(x_new < x.min()) | (x_new > x.max())] = float(fill_value)
 
     print(f"[Praxis] Interpolation: {method}, {len(x)} -> {len(x_new)} points")
     return x_new, y_new

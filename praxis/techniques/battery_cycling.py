@@ -179,6 +179,7 @@ def compute_dqdv(
 
     if smoothing_window and smoothing_window > 1:
         w = int(smoothing_window) | 1   # force odd
+        w = min(w, dqdv.size if dqdv.size % 2 else dqdv.size - 1)  # not longer than the data
         kernel = np.ones(w) / w
         dqdv = np.convolve(dqdv, kernel, mode="same")
 

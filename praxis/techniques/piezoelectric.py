@@ -191,6 +191,7 @@ def analyse_se_curve(
     strain: Any,
     *,
     thickness: Optional[float] = None,
+    strain_unit: str = "percent",
 ) -> SECurveResults:
     """Analyse a strain-electric field (S-E) butterfly curve.
 
@@ -199,9 +200,12 @@ def analyse_se_curve(
     electric_field : array-like
         Electric field in kV/cm.
     strain : array-like
-        Strain in % or ppm.
+        Strain, in *strain_unit*.
     thickness : float, optional
-        Sample thickness in mm (for d33 calculation).
+        Sample thickness in mm. Not needed for d33* (S_max / E_max) and
+        kept only for backwards compatibility.
+    strain_unit : str
+        'percent', 'ppm' or 'fraction'.
 
     Returns
     -------
@@ -213,18 +217,20 @@ def analyse_se_curve(
         allow_nan=False,
     )
 
+    strain_to_fraction = {"percent": 1e-2, "ppm": 1e-6, "fraction": 1.0}
+    if strain_unit not in strain_to_fraction:
+        raise ValueError(f"Unknown strain_unit '{strain_unit}'. Use percent, ppm or fraction.")
+
     results = SECurveResults()
     results.s_max = s.max()
     results.s_neg = s.min()
 
-    # Effective d33 from slope at high field
-    # d33 = dS/dE (in the linear unipolar region)
-    if thickness is not None:
-        # d33 = S_max * thickness / E_max (approximate)
-        e_max = np.max(np.abs(e))
-        if e_max > 0:
-            # Convert: strain (%) * thickness (mm) / field (kV/cm) -> pm/V
-            results.d33_eff = (results.s_max / 100) * (thickness * 1e6) / (e_max * 1e5)
+    # Large-signal effective d33* = S_max / E_max
+    e_max = np.max(np.abs(e))
+    if e_max > 0:
+        # strain (fraction) / field (kV/cm -> V/m) gives m/V; x1e12 -> pm/V
+        s_frac = results.s_max * strain_to_fraction[strain_unit]
+        results.d33_eff = s_frac / (e_max * 1e5) * 1e12
 
     # Asymmetry
     if results.s_max and results.s_neg:

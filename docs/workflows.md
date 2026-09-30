@@ -28,7 +28,7 @@ intensity = df["y"].values
 corrected, baseline, _ = correct_baseline(two_theta, intensity, method="als")
 
 # Step 3: Optional smoothing (only if noisy)
-# corrected = smooth(corrected, method="savgol", window=7, polyorder=3)
+# corrected = smooth(corrected, method="savgol", window=7, order=3)
 
 # Step 4: Full XRD analysis (peaks, d-spacings, Scherrer, Williamson-Hall)
 results = analyse_xrd(two_theta, corrected, wavelength="Cu_Ka",
@@ -226,7 +226,8 @@ hf = df["heat_flow"].values
 # Step 2: Full DSC analysis
 results = analyse_dsc(temp, hf,
                       endotherm_down=True,       # TA Instruments convention
-                      dh_reference=293.0,        # J/g for 100% crystalline (e.g. PET)
+                      dh_reference=140.0,        # J/g for 100% crystalline PET
+                      heating_rate=10.0,         # K/min, needed for enthalpy
                       smoothing_window=15,
                       min_peak_height_pct=8.0)
 
@@ -611,6 +612,7 @@ from praxis.core.utils import apply_style
 from praxis.batch.batch import load_batch, batch_analyse, batch_overlay, extract_parameters
 from praxis.techniques.xrd import analyse_xrd
 import numpy as np
+from scipy.integrate import trapezoid
 
 # Step 1: Batch load all .xy files from a directory
 datasets = load_batch(pattern="*.xy", directory="xrd_data/")
@@ -630,7 +632,7 @@ print(results_table.to_string())
 extractors = {
     "max_intensity": lambda x, y: float(np.max(y)),
     "peak_2theta": lambda x, y: float(x[np.argmax(y)]),
-    "integrated_area": lambda x, y: float(np.trapz(y, x)),
+    "integrated_area": lambda x, y: float(trapezoid(y, x)),
 }
 params = extract_parameters(datasets, extractors)
 print(params.to_string())
@@ -768,7 +770,7 @@ filtered_notch = filter_signal(signal, "notch", cutoff=50.0, x=time,
 clean = filter_signal(signal, "bandpass", cutoff=(10, 1000), x=time, order=4)
 
 # Step 7: Smoothing (Savitzky-Golay)
-smoothed = smooth(clean, method="savgol", window=21, polyorder=3)
+smoothed = smooth(clean, method="savgol", window=21, order=3)
 
 # Step 8: Four-panel publication figure
 apply_style("nature")

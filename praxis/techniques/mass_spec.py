@@ -41,7 +41,7 @@ ISOTOPE_DATA: dict[str, dict[str, float]] = {
 # Monoisotopic masses
 MONOISOTOPIC_MASS: dict[str, float] = {
     "C": 12.0000,
-    "H": 1.007940,
+    "H": 1.007825,
     "N": 14.003074,
     "O": 15.994915,
     "S": 31.972071,

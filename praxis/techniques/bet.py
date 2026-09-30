@@ -208,11 +208,13 @@ def bjh_pore_distribution(
     w = np.asarray(quantity_adsorbed, dtype=float)
     p_p0, w = validate_xy(p_p0, w, allow_nan=False)
 
-    # Sort by P/P0 descending for desorption
-    if branch == "desorption":
-        order = np.argsort(p_p0)[::-1]
-    else:
-        order = np.argsort(p_p0)
+    if branch not in ("desorption", "adsorption"):
+        raise ValueError("branch must be 'desorption' or 'adsorption'.")
+
+    # Work from high to low P/P0 for either branch, so each step's volume
+    # change (pores emptying on desorption, or filling on adsorption when
+    # read in reverse) is positive
+    order = np.argsort(p_p0)[::-1]
     p_p0 = p_p0[order]
     w = w[order]
 
@@ -257,7 +259,7 @@ def bjh_pore_distribution(
     v_liquid = w_valid * 1.547e-3
 
     # Incremental pore volume: dV
-    dv = -np.diff(v_liquid)  # Negative because desorption decreases
+    dv = -np.diff(v_liquid)  # volume held in pores between successive pressures
     d_mid = (diameters[:-1] + diameters[1:]) / 2.0
     dd = np.abs(np.diff(diameters))
 

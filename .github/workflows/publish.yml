@@ -30,8 +30,24 @@ jobs:
           name: dist
           path: dist/
 
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Run tests
+        run: |
+          python -m pip install --upgrade pip
+          pip install .[test]
+          python -m pytest tests/ -q
+
   publish:
-    needs: build
+    needs: [build, test]
     runs-on: ubuntu-latest
     environment:
       name: pypi
