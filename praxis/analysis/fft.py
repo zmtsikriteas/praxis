@@ -103,12 +103,17 @@ def compute_fft(
     Y = fft(y)
     freq = fftfreq(n, d=1.0 / sample_rate)
 
-    # Take positive frequencies only
-    pos_mask = freq >= 0
-    freq_pos = freq[pos_mask]
-    Y_pos = Y[pos_mask]
+    # One-sided spectrum: bins 0 .. n//2 (includes Nyquist for even n)
+    n_pos = n // 2 + 1
+    freq_pos = np.abs(freq[:n_pos])
+    Y_pos = Y[:n_pos]
 
+    # Double every bin except DC and, for even n, the Nyquist bin, which
+    # have no negative-frequency counterpart
     amplitude = 2.0 * np.abs(Y_pos) / n
+    amplitude[0] /= 2.0
+    if n % 2 == 0 and n_pos > 1:
+        amplitude[-1] /= 2.0
     phase = np.angle(Y_pos)
     power = amplitude ** 2
 

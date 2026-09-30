@@ -196,9 +196,17 @@ def execute_template(
     """Execute all steps in a template on data.
 
     Each step receives `x` and `y` as positional arguments plus its own
-    params merged with any extra **kwargs. If a step returns a tuple of
-    two arrays, those become the x and y for the next step (pipeline
-    chaining). Otherwise the original x and y are passed forward.
+    params merged with any extra **kwargs. Functions whose first parameter
+    is named ``y`` (e.g. ``smooth``) receive only `y`.
+
+    Outputs are chained into the next step as follows:
+
+    - a single array the same length as y becomes the new y;
+    - a tuple of two equal-length arrays becomes the new (x, y);
+    - a tuple ``(y_corrected, baseline, x)`` (the ``correct_baseline``
+      convention) makes ``y_corrected`` the new y.
+
+    Any other result leaves x and y unchanged.
 
     Parameters
     ----------
@@ -230,19 +238,12 @@ def execute_template(
 
         # Merge step params with global kwargs (step params take priority)
         merged = {**kwargs, **step.params}
-        result = func(x_current, y_current, **merged)
+        if _takes_y_only(func):
+            result = func(y_current, **merged)
+        else:
+            result = func(x_current, y_current, **merged)
 
-        # Determine output arrays for the next step
-        x_out, y_out = x_current, y_current
-        if isinstance(result, tuple) and len(result) == 2:
-            try:
-                a, b = result
-                a_arr = np.asarray(a, dtype=float)
-                b_arr = np.asarray(b, dtype=float)
-                if a_arr.ndim == 1 and b_arr.ndim == 1 and len(a_arr) == len(b_arr):
-                    x_out, y_out = a_arr, b_arr
-            except (ValueError, TypeError):
-                pass  # Not array-like outputs; keep previous x, y
+        x_out, y_out = _chain_output(result, x_current, y_current)
 
         x_current, y_current = x_out, y_out
 
@@ -257,6 +258,44 @@ def execute_template(
 
     print(f"[Praxis] Template complete: {len(results)} steps executed")
     return results
+
+
+def _takes_y_only(func: Any) -> bool:
+    """True if the function's first parameter is ``y`` (a y-only transform)."""
+    import inspect
+
+    try:
+        params = list(inspect.signature(func).parameters)
+    except (TypeError, ValueError):
+        return False
+    return bool(params) and params[0] == "y"
+
+
+def _chain_output(result: Any, x: Any, y: Any) -> tuple[Any, Any]:
+    """Work out the (x, y) to pass to the next template step."""
+    import numpy as np
+
+    def as_1d(a: Any) -> Any:
+        try:
+            arr = np.asarray(a, dtype=float)
+        except (ValueError, TypeError):
+            return None
+        return arr if arr.ndim == 1 else None
+
+    if isinstance(result, np.ndarray):
+        arr = as_1d(result)
+        if arr is not None and len(arr) == len(y):
+            return x, arr
+    elif isinstance(result, tuple) and len(result) == 2:
+        a, b = as_1d(result[0]), as_1d(result[1])
+        if a is not None and b is not None and len(a) == len(b):
+            return a, b
+    elif isinstance(result, tuple) and len(result) == 3:
+        y_corr, _, x_ret = (as_1d(r) for r in result)
+        if (y_corr is not None and x_ret is not None
+                and len(x_ret) == len(x) and np.allclose(x_ret, x)):
+            return x, y_corr
+    return x, y
 
 
 # ---------------------------------------------------------------------------

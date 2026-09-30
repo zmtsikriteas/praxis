@@ -34,7 +34,7 @@ results = analyse_xrd(df["two_theta_deg"], df["intensity"], wavelength="Cu_Ka")
 print(results)  # peak positions, d-spacings, FWHM, crystallite sizes
 ```
 
-Every recipe below replaces the placeholder filename with `load_sample("...")` to make it copy-paste runnable.
+Recipes below use placeholder file names such as `scan.xy`; swap in your own file, or a built-in dataset via `load_sample("...")` (see `list_samples()`), to run them.
 
 ---
 
@@ -570,7 +570,7 @@ from praxis.analysis.baseline import correct_baseline
 
 # Background subtraction (power-law common for EELS)
 corrected, bg, _ = correct_baseline(df["energy_loss"], df["intensity"],
-                                     method="polynomial", degree=3)
+                                     method="polynomial", order=3)
 
 # Edge detection
 peaks = find_peaks_auto(df["energy_loss"], corrected, min_height_pct=3.0)
@@ -807,6 +807,7 @@ from praxis.techniques.dsc_tga import analyse_dsc
 results = analyse_dsc(df["temperature"], df["heat_flow"],
                       endotherm_down=True,    # TA Instruments convention
                       dh_reference=293.0,     # J/g for 100% crystalline PE
+                      heating_rate=10.0,      # K/min, needed for enthalpy
                       smoothing_window=11)
 # Returns: DSCResults with Tg, Tm, Tc, crystallinity %, transitions list
 ```
@@ -1846,8 +1847,8 @@ df = load_data("se_curve.csv")
 from praxis.techniques.piezoelectric import analyse_se_curve
 
 results = analyse_se_curve(df["electric_field"], df["strain"],
-                           thickness=1.0)  # mm
-# Returns: SECurveResults with d33_eff (pm/V), S_max (%), asymmetry
+                           strain_unit="percent")  # field in kV/cm
+# Returns: SECurveResults with d33_eff = S_max/E_max (pm/V), S_max (%), asymmetry
 ```
 
 **Plot:**

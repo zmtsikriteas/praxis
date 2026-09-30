@@ -11,6 +11,7 @@ from typing import Any, Optional, Sequence, Union
 
 import numpy as np
 import pandas as pd
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 from matplotlib.figure import Figure
@@ -109,7 +110,7 @@ def plot_data(
 
     if fig is None or ax is None:
         set_palette(palette)
-        fig, ax = plt.subplots(figsize=figsize or (6, 4.5))
+        fig, ax = plt.subplots(figsize=figsize)
 
     plot_kwargs: dict[str, Any] = {}
     if label:
@@ -126,7 +127,7 @@ def plot_data(
             x, y,
             marker=marker or "",
             linestyle=linestyle or "-",
-            linewidth=linewidth or 1.5,
+            linewidth=linewidth or mpl.rcParams["lines.linewidth"],
             **plot_kwargs,
         )
     elif kind == "scatter":
@@ -136,34 +137,40 @@ def plot_data(
     elif kind == "bar_h":
         ax.barh(x, y, height=plot_kwargs.pop("height", 0.8), **plot_kwargs)
     elif kind == "step":
-        ax.step(x, y, where=plot_kwargs.pop("where", "mid"), linewidth=linewidth or 1.5, **plot_kwargs)
+        ax.step(x, y, where=plot_kwargs.pop("where", "mid"), linewidth=linewidth or mpl.rcParams["lines.linewidth"], **plot_kwargs)
     elif kind == "area":
-        ax.fill_between(x, y, alpha=alpha if alpha != 1.0 else 0.4, **plot_kwargs)
-        ax.plot(x, y, linewidth=linewidth or 1.0, color=colour)
+        fill_alpha = plot_kwargs.pop("alpha", 0.4)
+        ax.fill_between(x, y, alpha=fill_alpha, **plot_kwargs)
+        ax.plot(x, y, linewidth=linewidth or mpl.rcParams["lines.linewidth"], color=colour)
     elif kind == "errorbar":
         ax.errorbar(
             x, y,
             xerr=xerr, yerr=yerr,
             fmt=marker or "o",
             capsize=plot_kwargs.pop("capsize", 3),
-            linewidth=linewidth or 1.0,
+            linewidth=linewidth or mpl.rcParams["lines.linewidth"],
             markersize=plot_kwargs.pop("markersize", 4),
             **plot_kwargs,
         )
     elif kind == "fill_between":
         y2 = plot_kwargs.pop("y2", 0)
-        ax.fill_between(x, y, y2, alpha=alpha if alpha != 1.0 else 0.3, **plot_kwargs)
+        fill_alpha = plot_kwargs.pop("alpha", 0.3)
+        ax.fill_between(x, y, y2, alpha=fill_alpha, **plot_kwargs)
     elif kind == "histogram":
         ax.hist(y, bins=plot_kwargs.pop("bins", "auto"), **plot_kwargs)
     elif kind == "box":
         # y can be a list of arrays or a single array
         box_data = y if isinstance(y, (list, tuple)) else [y]
+        # Tick labels are set afterwards: boxplot's 'labels' argument was
+        # renamed in newer matplotlib releases
+        box_labels = plot_kwargs.pop("labels", None)
         bp = ax.boxplot(
             box_data,
             patch_artist=True,
-            labels=plot_kwargs.pop("labels", None),
             **{k: v for k, v in plot_kwargs.items() if k not in ("color", "label")},
         )
+        if box_labels is not None:
+            ax.set_xticks(range(1, len(box_data) + 1), list(box_labels))
         colours = get_palette(palette, len(box_data))
         for patch, c in zip(bp["boxes"], colours):
             patch.set_facecolor(c)
@@ -189,7 +196,7 @@ def plot_data(
             x, y,
             marker=marker or "",
             linestyle=linestyle or "-",
-            linewidth=linewidth or 1.5,
+            linewidth=linewidth or mpl.rcParams["lines.linewidth"],
             **plot_kwargs,
         )
     elif kind == "waterfall":
@@ -210,8 +217,8 @@ def plot_data(
                 kw["label"] = labels_list[i]
             ax.plot(
                 x, ys + i * offset_step,
-                color=colours[i],
-                linewidth=linewidth or 1.5,
+                color=kw.pop("color", colours[i]),
+                linewidth=linewidth or mpl.rcParams["lines.linewidth"],
                 linestyle=linestyle or "-",
                 **kw,
             )
@@ -284,7 +291,7 @@ def overlay_plots(
     """
     colours = get_palette(palette, len(datasets))
     set_palette(palette)
-    fig, ax = plt.subplots(figsize=figsize or (6, 4.5))
+    fig, ax = plt.subplots(figsize=figsize)
 
     for i, ds in enumerate(datasets):
         kw = {**common_kwargs, **{k: v for k, v in ds.items() if k not in ("x", "y")}}
@@ -487,7 +494,7 @@ def plot_broken_axis(
     plot_kw: dict[str, Any] = dict(
         marker=marker or "",
         linestyle=linestyle or "-",
-        linewidth=linewidth or 1.5,
+        linewidth=linewidth or mpl.rcParams["lines.linewidth"],
         color=c,
         **kwargs,
     )
@@ -599,7 +606,7 @@ def plot_with_inset(
 
     if fig is None or ax is None:
         set_palette(palette)
-        fig, ax = plt.subplots(figsize=figsize or (6, 4.5))
+        fig, ax = plt.subplots(figsize=figsize)
 
     colours = get_palette(palette)
     c = colour or colours[0]
@@ -607,7 +614,7 @@ def plot_with_inset(
     plot_kw: dict[str, Any] = dict(
         marker=marker or "",
         linestyle=linestyle or "-",
-        linewidth=linewidth or 1.5,
+        linewidth=linewidth or mpl.rcParams["lines.linewidth"],
         color=c,
         **kwargs,
     )
@@ -629,7 +636,7 @@ def plot_with_inset(
     )
     ax_inset.plot(x, y, color=c,
                   linestyle=linestyle or "-",
-                  linewidth=(linewidth or 1.5) * 0.8)
+                  linewidth=(linewidth or mpl.rcParams["lines.linewidth"]) * 0.8)
     ax_inset.set_xlim(inset_xlim)
     ax_inset.set_ylim(inset_ylim)
     ax_inset.tick_params(labelsize=7)

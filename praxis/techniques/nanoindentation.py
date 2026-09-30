@@ -27,6 +27,10 @@ TIP_BETA: dict[str, float] = {
     "conical": 1.000,
 }
 
+# Conversion factors to SI (metres, newtons)
+DEPTH_UNITS: dict[str, float] = {"nm": 1e-9, "um": 1e-6, "mm": 1e-3, "m": 1.0}
+LOAD_UNITS: dict[str, float] = {"uN": 1e-6, "mN": 1e-3, "N": 1.0}
+
 
 # ---------------------------------------------------------------------------
 # Data classes
@@ -38,10 +42,10 @@ class IndentResult:
     hardness_gpa: float
     modulus_gpa: float
     reduced_modulus_gpa: float
-    contact_stiffness: float  # S = dP/dh (N/m or mN/nm)
-    contact_depth: float  # hc
-    max_load: float
-    max_depth: float
+    contact_stiffness: float  # S = dP/dh, in input load/depth units
+    contact_depth: float  # hc, in input depth units
+    max_load: float  # input load units
+    max_depth: float  # input depth units
 
     def table(self) -> str:
         lines = [
@@ -141,15 +145,17 @@ def analyse_indent(
     poisson_tip: float = 0.07,
     E_tip: float = 1141e9,
     unload_fraction: float = 0.8,
+    depth_unit: str = "nm",
+    load_unit: str = "mN",
 ) -> IndentResult:
     """Oliver-Pharr nanoindentation analysis.
 
     Parameters
     ----------
     depth : array-like
-        Indentation depth (nm or um -- units must be consistent).
+        Indentation depth, in *depth_unit*.
     load : array-like
-        Applied load (mN or uN -- units must be consistent).
+        Applied load, in *load_unit*.
     tip : str
         Indenter tip geometry.
     poisson_sample : float
@@ -160,11 +166,24 @@ def analyse_indent(
         Elastic modulus of the indenter in Pa (1141 GPa for diamond).
     unload_fraction : float
         Fraction of the unloading curve to use for power-law fit (0-1).
+    depth_unit : str
+        Unit of *depth*: 'nm', 'um', 'mm' or 'm'.
+    load_unit : str
+        Unit of *load*: 'uN', 'mN' or 'N'.
 
     Returns
     -------
     IndentResult
+        Hardness and moduli in GPa; depths, load and stiffness in the
+        input units.
     """
+    if depth_unit not in DEPTH_UNITS:
+        raise ValueError(f"Unknown depth_unit '{depth_unit}'. Use one of {list(DEPTH_UNITS)}.")
+    if load_unit not in LOAD_UNITS:
+        raise ValueError(f"Unknown load_unit '{load_unit}'. Use one of {list(LOAD_UNITS)}.")
+    k_h = DEPTH_UNITS[depth_unit]
+    k_p = LOAD_UNITS[load_unit]
+
     h_arr, p_arr = validate_xy(
         np.asarray(depth, dtype=float),
         np.asarray(load, dtype=float),
@@ -233,12 +252,13 @@ def analyse_indent(
     if A_contact <= 0:
         raise ValueError(f"Zero contact area at hc = {hc}.")
 
-    # Hardness
-    H = p_max / A_contact
+    # Hardness (Pa): P / A, converted to SI
+    H = (p_max * k_p) / (A_contact * k_h ** 2)
 
-    # Reduced modulus
+    # Reduced modulus (Pa)
     beta = TIP_BETA.get(tip.lower(), 1.0)
-    Er = (math.sqrt(math.pi) / (2.0 * beta)) * S / math.sqrt(A_contact)
+    S_si = S * k_p / k_h
+    Er = (math.sqrt(math.pi) / (2.0 * beta)) * S_si / math.sqrt(A_contact * k_h ** 2)
 
     # Sample modulus from reduced modulus
     # 1/Er = (1 - vs^2)/Es + (1 - vi^2)/Ei
@@ -251,13 +271,10 @@ def analyse_indent(
     else:
         Es = (1.0 - poisson_sample ** 2) / sample_compliance
 
-    # Convert to GPa (assuming input is in consistent units)
-    # If load is mN and depth is nm: P/A gives GPa directly when A is in nm^2
-    # We report raw values; user handles unit consistency.
     result = IndentResult(
-        hardness_gpa=float(H),
-        modulus_gpa=float(Es),
-        reduced_modulus_gpa=float(Er),
+        hardness_gpa=float(H / 1e9),
+        modulus_gpa=float(Es / 1e9),
+        reduced_modulus_gpa=float(Er / 1e9),
         contact_stiffness=float(S),
         contact_depth=float(hc),
         max_load=float(p_max),
@@ -388,6 +405,8 @@ def batch_indents(
     poisson_sample: float = 0.3,
     poisson_tip: float = 0.07,
     E_tip: float = 1141e9,
+    depth_unit: str = "nm",
+    load_unit: str = "mN",
 ) -> BatchIndentResult:
     """Analyse multiple indentation curves and return statistics.
 
@@ -395,7 +414,7 @@ def batch_indents(
     ----------
     indents_list : list of (depth, load) tuples
         Each element is a (depth_array, load_array) pair.
-    tip, poisson_sample, poisson_tip, E_tip
+    tip, poisson_sample, poisson_tip, E_tip, depth_unit, load_unit
         Passed to analyse_indent.
 
     Returns
@@ -411,6 +430,8 @@ def batch_indents(
                 poisson_sample=poisson_sample,
                 poisson_tip=poisson_tip,
                 E_tip=E_tip,
+                depth_unit=depth_unit,
+                load_unit=load_unit,
             )
             results.append(r)
         except (ValueError, RuntimeError) as e:

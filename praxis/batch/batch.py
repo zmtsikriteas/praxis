@@ -37,7 +37,8 @@ def load_batch(
 
     Returns
     -------
-    dict mapping filename -> DataFrame.
+    dict mapping file path relative to *directory* -> DataFrame. For
+    non-recursive patterns this is just the file name.
     """
     path = Path(directory)
     files = sorted(path.glob(pattern))
@@ -50,9 +51,9 @@ def load_batch(
     for f in files:
         try:
             df = load_data(f, **loader_kwargs)
-            data[f.name] = df
+            data[f.relative_to(path).as_posix()] = df
         except Exception as e:
-            print(f"[Praxis] Warning: failed to load {f.name}: {e}")
+            print(f"[Praxis] Warning: failed to load {f.relative_to(path).as_posix()}: {e}")
 
     print(f"[Praxis] Batch loaded {len(data)} / {len(files)} files")
     return data
@@ -215,10 +216,11 @@ def extract_parameters(
 
     Example
     -------
+    >>> from scipy.integrate import trapezoid
     >>> extractors = {
     ...     "max_y": lambda x, y: np.max(y),
     ...     "peak_x": lambda x, y: x[np.argmax(y)],
-    ...     "area": lambda x, y: np.trapezoid(y, x),
+    ...     "area": lambda x, y: trapezoid(y, x),
     ... }
     >>> table = extract_parameters(datasets, extractors)
     """

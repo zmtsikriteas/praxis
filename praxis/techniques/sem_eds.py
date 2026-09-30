@@ -287,20 +287,34 @@ def parse_eds_composition(
         "Se": 78.97, "Br": 79.90, "Sr": 87.62, "Zr": 91.22, "Nb": 92.91,
         "Mo": 95.95, "Ag": 107.87, "Sn": 118.71, "Ba": 137.33, "La": 138.91,
         "Ce": 140.12, "Pb": 207.20, "Bi": 208.98, "Au": 196.97, "Pt": 195.08,
+        "Ne": 20.18, "Ar": 39.95, "Sc": 44.96, "Kr": 83.80, "Rb": 85.47,
+        "Y": 88.91, "Ru": 101.07, "Rh": 102.91, "Pd": 106.42, "Cd": 112.41,
+        "In": 114.82, "Sb": 121.76, "Te": 127.60, "I": 126.90, "Xe": 131.29,
+        "Cs": 132.91, "Pr": 140.91, "Nd": 144.24, "Sm": 150.36, "Eu": 151.96,
+        "Gd": 157.25, "Tb": 158.93, "Dy": 162.50, "Ho": 164.93, "Er": 167.26,
+        "Tm": 168.93, "Yb": 173.05, "Lu": 174.97, "Hf": 178.49, "Ta": 180.95,
+        "W": 183.84, "Re": 186.21, "Os": 190.23, "Ir": 192.22, "Hg": 200.59,
+        "Tl": 204.38, "Th": 232.04, "U": 238.03,
     }
     if atomic_masses:
         _am.update(atomic_masses)
 
+    unknown = [e for e in elements if e not in _am]
+    if unknown:
+        raise ValueError(
+            f"No atomic mass for: {', '.join(unknown)}. Pass them via atomic_masses."
+        )
+
     if weight_pct is not None:
         wt = list(weight_pct)
         # Calculate atomic%
-        moles = [w / _am.get(e, 1.0) for e, w in zip(elements, wt)]
+        moles = [w / _am[e] for e, w in zip(elements, wt)]
         total_moles = sum(moles)
         at = [(m / total_moles) * 100 for m in moles] if total_moles > 0 else [0] * len(elements)
     elif atomic_pct is not None:
         at = list(atomic_pct)
         # Calculate weight%
-        masses = [a * _am.get(e, 1.0) for e, a in zip(elements, at)]
+        masses = [a * _am[e] for e, a in zip(elements, at)]
         total_mass = sum(masses)
         wt = [(m / total_mass) * 100 for m in masses] if total_mass > 0 else [0] * len(elements)
     else:
