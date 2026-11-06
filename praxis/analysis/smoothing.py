@@ -115,6 +115,9 @@ def _smooth_moving_average(
     mode : str
         'same' (output length = input), 'valid' (no edge effects).
     """
+    # A window longer than the signal would make np.convolve return a
+    # longer array than the input
+    window = max(1, min(int(window), len(y)))
     kernel = np.ones(window) / window
     if mode == "valid":
         return np.convolve(y, kernel, mode="valid")

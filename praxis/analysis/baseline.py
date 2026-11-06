@@ -1,5 +1,5 @@
 """Baseline correction: polynomial, ALS (asymmetric least squares), Shirley,
-Tougaard, SNIP, and rubberband methods.
+SNIP, and rubberband methods.
 """
 
 from __future__ import annotations
@@ -7,6 +7,7 @@ from __future__ import annotations
 from typing import Any, Optional
 
 import numpy as np
+from scipy.integrate import trapezoid
 from scipy import sparse
 from scipy.sparse.linalg import spsolve
 
@@ -275,13 +276,13 @@ def _baseline_shirley(
         baseline_prev = baseline.copy()
 
         # Cumulative integral from right
-        integral_total = np.trapezoid(y - baseline, x)
+        integral_total = trapezoid(y - baseline, x)
         if abs(integral_total) < 1e-30:
             break
 
         cumulative = np.zeros(n)
         for i in range(n - 2, -1, -1):
-            cumulative[i] = cumulative[i + 1] + np.trapezoid(
+            cumulative[i] = cumulative[i + 1] + trapezoid(
                 (y - baseline)[i:i + 2], x[i:i + 2]
             )
 

@@ -1,7 +1,7 @@
 """XPS (X-ray Photoelectron Spectroscopy) analysis.
 
 Survey scan, high-resolution peak fitting (Gaussian-Lorentzian),
-Shirley/Tougaard background, chemical state identification,
+Shirley/linear background, chemical state identification,
 atomic %, binding energy calibration.
 """
 
@@ -196,7 +196,8 @@ def fit_highres(
     peak_positions : list of float, optional
         Approximate peak centres in eV.
     background : str
-        Background type: 'shirley', 'linear', 'polynomial'.
+        Background type: 'shirley', 'linear' (straight line between the
+        region end points), 'polynomial' or 'none'.
     peak_model : str
         Peak shape: 'gaussian', 'lorentzian', 'voigt', 'pseudo_voigt'.
     element : str, optional
@@ -215,11 +216,18 @@ def fit_highres(
     # Background subtraction
     if background == "shirley":
         intens_corr, bg, _ = correct_baseline(be, intens, method="shirley")
-    elif background in ("linear", "polynomial"):
-        intens_corr, bg, _ = correct_baseline(be, intens, method=background)
-    else:
+    elif background == "linear":
+        bg = intens[0] + (intens[-1] - intens[0]) * (be - be[0]) / (be[-1] - be[0])
+        intens_corr = intens - bg
+    elif background == "polynomial":
+        intens_corr, bg, _ = correct_baseline(be, intens, method="polynomial")
+    elif background == "none":
         intens_corr = intens
         bg = np.zeros_like(intens)
+    else:
+        raise ValueError(
+            f"Unknown background '{background}'. Use 'shirley', 'linear', 'polynomial' or 'none'."
+        )
 
     # Deconvolve peaks
     result = deconvolve_peaks(
