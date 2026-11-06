@@ -117,7 +117,7 @@ plot_nyquist(data, fit=fit)
 **Pipeline:**
 1. Survey scan overview
 2. High-resolution region selection
-3. Shirley or Tougaard background subtraction
+3. Shirley or linear background subtraction
 4. Peak fitting (Gaussian-Lorentzian mixed)
 5. Binding energy calibration (C 1s = 284.8 eV)
 6. Atomic % calculation from peak areas and sensitivity factors

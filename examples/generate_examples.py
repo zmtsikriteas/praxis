@@ -52,7 +52,7 @@ apply_style("elsevier")
 from praxis.techniques.mechanical import analyse_tensile
 ss = load_sample("stress_strain")
 strain, stress = ss.iloc[:, 0].values, ss.iloc[:, 1].values
-res = analyse_tensile(strain, stress)
+res = analyse_tensile(strain, stress, strain_unit="fraction")
 
 fig, ax = plot_data(strain, stress, kind="line", colour="#4477AA",
                     linewidth=1.5, xlabel="Strain", ylabel="Stress (MPa)",
@@ -133,8 +133,8 @@ axes[0, 0].set_title("(a) Calibration", fontsize=7)
 
 groups = [np.random.normal(50, 5, 50), np.random.normal(55, 8, 50),
           np.random.normal(48, 6, 50)]
-bp = axes[0, 1].boxplot(groups, labels=["Control", "Treat A", "Treat B"],
-                         patch_artist=True, widths=0.5)
+bp = axes[0, 1].boxplot(groups, patch_artist=True, widths=0.5)
+axes[0, 1].set_xticks([1, 2, 3], ["Control", "Treat A", "Treat B"])
 for patch, c in zip(bp["boxes"], ["#56B4E9", "#E69F00", "#009E73"]):
     patch.set_facecolor(c); patch.set_alpha(0.7)
 axes[0, 1].set_ylabel("Measurement")

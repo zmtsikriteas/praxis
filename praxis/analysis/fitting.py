@@ -7,6 +7,7 @@ and goodness-of-fit statistics.
 
 from __future__ import annotations
 
+import warnings
 from typing import Any, Callable, Optional, Union
 
 import numpy as np
@@ -23,6 +24,7 @@ from lmfit.models import (
 )
 from lmfit.model import ModelResult
 
+from praxis.core.safe_eval import ALLOWED_FUNCTIONS, evaluate, parse_expression
 from praxis.core.utils import validate_xy
 
 
@@ -70,14 +72,23 @@ def fit_curve(
     FitResult
         Object with fitted parameters, statistics, and plotting helpers.
     """
-    x, y = validate_xy(np.asarray(x, dtype=float), np.asarray(y, dtype=float), allow_nan=False)
+    x = np.asarray(x, dtype=float)
+    y = np.asarray(y, dtype=float)
+    if weights is not None:
+        weights = np.asarray(weights, dtype=float)
+        if weights.shape != x.shape:
+            raise ValueError(f"weights ({len(weights)}) and x ({len(x)}) have different lengths.")
+        # Drop NaN observations together with their weights
+        keep = ~(np.isnan(x) | np.isnan(y))
+        weights = weights[keep]
+    x, y = validate_xy(x, y, allow_nan=False)
 
     # Restrict to x_range if given
     if x_range is not None:
         mask = (x >= x_range[0]) & (x <= x_range[1])
         x, y = x[mask], y[mask]
         if weights is not None:
-            weights = np.asarray(weights)[mask]
+            weights = weights[mask]
 
     if model == "auto":
         model = _auto_detect_model(x, y)
@@ -163,17 +174,19 @@ class FitResult:
     def confidence_band(self, sigma: float = 1.0, n: int = 500) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Compute confidence band on a fine grid.
 
-        Returns (x_fine, y_lower, y_upper).
+        Returns (x_fine, y_lower, y_upper). If the uncertainty cannot be
+        evaluated (e.g. no covariance matrix), the bounds are NaN rather
+        than a misleading zero-width band.
         """
         x_fine = np.linspace(self.x.min(), self.x.max(), n)
+        y_fit = self.eval(x_fine)
         try:
             dely = self.result.eval_uncertainty(x=x_fine, sigma=sigma)
-            y_fit = self.eval(x_fine)
-            return x_fine, y_fit - dely, y_fit + dely
-        except Exception:
-            # Fallback: no confidence band available
-            y_fit = self.eval(x_fine)
-            return x_fine, y_fit, y_fit
+        except Exception as exc:
+            warnings.warn(f"Confidence band unavailable: {exc}", stacklevel=2)
+            nan = np.full_like(y_fit, np.nan)
+            return x_fine, nan, nan
+        return x_fine, y_fit - dely, y_fit + dely
 
     def report(self) -> str:
         """Human-readable fit report."""
@@ -295,26 +308,29 @@ def _sigmoidal(x: np.ndarray, L: float, k: float, x0: float, b: float) -> np.nda
 
 
 def _make_custom_func(expression: str) -> Callable:
-    """Create a function from a string expression using x as variable.
+    """Create a model function from a string expression using x as variable.
 
-    Example: 'a * exp(-b * x) + c'
+    Example: 'a * exp(-b * x) + c'. Every other identifier becomes a fit
+    parameter. The expression is validated against a whitelist of syntax
+    (see :mod:`praxis.core.safe_eval`) before use.
     """
-    import ast
+    code, param_names = parse_expression(expression, reserved={"x"})
+    if not param_names:
+        raise ValueError(f"Custom expression '{expression}' has no fit parameters.")
 
-    # Validate the expression doesn't contain dangerous code
-    allowed_names = {"x", "np", "exp", "sin", "cos", "tan", "log", "log10",
-                     "sqrt", "pi", "abs", "power"}
+    base = {
+        "np": np, "pi": np.pi, "e": np.e,
+        **{name: getattr(np, name) for name in ALLOWED_FUNCTIONS},
+    }
 
     def _func(x: np.ndarray, **kwargs: float) -> np.ndarray:
-        namespace = {
-            "x": x, "np": np,
-            "exp": np.exp, "sin": np.sin, "cos": np.cos, "tan": np.tan,
-            "log": np.log, "log10": np.log10, "sqrt": np.sqrt,
-            "pi": np.pi, "abs": np.abs, "power": np.power,
-        }
-        namespace.update(kwargs)
-        return eval(expression, {"__builtins__": {}}, namespace)
+        return evaluate(code, {**base, "x": x, **kwargs})
 
+    # lmfit reads argument names from these attributes when present, which
+    # works for a **kwargs function across lmfit versions
+    _func.argnames = ["x", *param_names]
+    _func.kwargs = []
+    _func.__name__ = "custom"
     return _func
 
 

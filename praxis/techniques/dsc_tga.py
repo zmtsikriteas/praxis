@@ -8,11 +8,12 @@ residue percentage, multi-step decomposition.
 
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass, field
 from typing import Any, Optional, Sequence
 
 import numpy as np
-from scipy.signal import find_peaks, argrelextrema
+from scipy.signal import find_peaks, argrelextrema, peak_prominences
 from scipy.integrate import trapezoid
 
 from praxis.core.utils import validate_xy
@@ -118,6 +119,8 @@ def analyse_dsc(
     dh_reference: Optional[float] = None,
     smoothing_window: int = 0,
     min_peak_height_pct: float = 10.0,
+    heating_rate: Optional[float] = None,
+    sample_mass: Optional[float] = None,
 ) -> DSCResults:
     """Analyse DSC data.
 
@@ -126,7 +129,8 @@ def analyse_dsc(
     temperature : array-like
         Temperature in C.
     heat_flow : array-like
-        Heat flow in mW or W/g. Convention set by *endotherm_down*.
+        Heat flow in W/g (equivalently mW/mg), or in mW if *sample_mass*
+        is given. Sign convention set by *endotherm_down*.
     endotherm_down : bool
         If True, endothermic events are negative (TA Instruments convention).
     tg_range : (T_min, T_max), optional
@@ -137,6 +141,13 @@ def analyse_dsc(
         Savitzky-Golay window for pre-smoothing (0 = no smoothing).
     min_peak_height_pct : float
         Minimum peak height as % of range.
+    heating_rate : float, optional
+        Heating rate in K/min. Required to convert the peak area over
+        temperature into an enthalpy (J/g); without it, enthalpies and
+        crystallinity are not calculated.
+    sample_mass : float, optional
+        Sample mass in mg. If given, *heat_flow* is taken to be in mW and
+        is normalised to W/g.
 
     Returns
     -------
@@ -151,6 +162,20 @@ def analyse_dsc(
     # Sort by temperature
     order = np.argsort(temp)
     temp, hf = temp[order], hf[order]
+
+    if sample_mass is not None:
+        if sample_mass <= 0:
+            raise ValueError("sample_mass must be positive (mg).")
+        hf = hf / sample_mass  # mW / mg = W/g
+
+    if heating_rate is not None and heating_rate <= 0:
+        raise ValueError("heating_rate must be positive (K/min).")
+    if heating_rate is None and dh_reference is not None:
+        warnings.warn(
+            "heating_rate not given: enthalpy and crystallinity cannot be "
+            "calculated. Pass heating_rate in K/min.",
+            stacklevel=2,
+        )
 
     if smoothing_window > 0:
         hf = smooth(hf, method="savgol", window=smoothing_window)
@@ -183,11 +208,19 @@ def analyse_dsc(
         onset, endset = _find_peak_bounds(temp, hf_detect, idx)
         t.onset = onset
         t.endset = endset
-        if onset is not None and endset is not None:
-            mask = (temp >= onset) & (temp <= endset)
-            baseline = np.interp(temp[mask], [onset, endset],
-                                 [hf_detect[mask][0], hf_detect[mask][-1]])
-            t.enthalpy = abs(trapezoid(hf_detect[mask] - baseline, temp[mask]))
+        if heating_rate is not None:
+            # Integrate between the peak's bases (where the signal returns
+            # to baseline), searched within a local window so that a nearby
+            # Tg step does not skew the baseline
+            _, lb, rb = peak_prominences(-hf_detect, [idx], wlen=max(11, len(temp) // 5))
+            seg = slice(int(lb[0]), int(rb[0]) + 1)
+            t_seg, h_seg = temp[seg], hf_detect[seg]
+            if len(t_seg) >= 3:
+                baseline = np.interp(t_seg, [t_seg[0], t_seg[-1]], [h_seg[0], h_seg[-1]])
+                # Integral of W/g over temperature (K) divided by heating
+                # rate (K/s) gives J/g
+                area = trapezoid(h_seg - baseline, t_seg)
+                t.enthalpy = abs(area) / (heating_rate / 60.0)
         transitions.append(t)
 
     # Detect exothermic peaks (crystallisation) -- peaks in hf_detect
@@ -211,12 +244,15 @@ def analyse_dsc(
         results.tc = max(cryst, key=lambda t: (t.height or 0)).temperature
 
     # Crystallinity
-    if dh_reference is not None and melting:
-        total_enthalpy = sum(t.enthalpy for t in melting if t.enthalpy)
-        results.crystallinity = (total_enthalpy / dh_reference) * 100
+    melt_enthalpies = [t.enthalpy for t in melting if t.enthalpy]
+    if dh_reference is not None and melt_enthalpies:
+        results.crystallinity = (sum(melt_enthalpies) / dh_reference) * 100
 
     results.transitions = transitions
     print(results.table())
+    if heating_rate is None and melting:
+        print("[Praxis] Note: enthalpy (dH) and crystallinity not calculated -- "
+              "pass heating_rate (K/min) to analyse_dsc.")
     return results
 
 
