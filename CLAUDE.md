@@ -34,7 +34,7 @@ from praxis.analysis.fitting import fit_curve
 
 numpy, scipy, pandas, matplotlib, lmfit, openpyxl, uncertainties
 
-Optional: h5py (HDF5 files), pdfplumber (PDF reading)
+Optional: h5py (HDF5 files), xlrd (legacy .xls files), Pillow, charset-normalizer, galvani
 
 ## Key Design Rules
 

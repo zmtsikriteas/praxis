@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 from typing import Any, Optional
 
 import numpy as np
+from scipy.integrate import trapezoid
 from scipy.signal import find_peaks as scipy_find_peaks
 
 from praxis.core.utils import validate_xy, validate_array
@@ -160,7 +161,7 @@ def analyse_chromatogram(
 
         # Integration (trapezoidal)
         if right > left:
-            area = float(np.trapezoid(s[left:right + 1], t[left:right + 1]))
+            area = float(trapezoid(s[left:right + 1], t[left:right + 1]))
         else:
             area = float(height * dt)
 

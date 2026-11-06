@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from typing import Any, Optional, Sequence
 
 import numpy as np
-from scipy.signal import find_peaks
+from scipy.signal import find_peaks, peak_prominences, peak_widths
 from scipy.integrate import trapezoid
 
 from praxis.core.utils import validate_xy
@@ -175,40 +175,19 @@ def find_peaks_auto(
 def _calc_fwhm(
     x: np.ndarray, y: np.ndarray, peak_idx: int, rel_height: float = 0.5
 ) -> Optional[float]:
-    """Calculate FWHM by interpolation at rel_height of peak above baseline."""
-    peak_val = y[peak_idx]
+    """Calculate the peak width at *rel_height* of its prominence.
 
-    # Estimate local baseline from nearby minima
-    search_range = max(5, len(x) // 20)
-    left_idx = max(0, peak_idx - search_range)
-    right_idx = min(len(x), peak_idx + search_range)
-    baseline = min(y[left_idx:peak_idx].min() if peak_idx > left_idx else y[peak_idx],
-                   y[peak_idx:right_idx].min() if right_idx > peak_idx else y[peak_idx])
-
-    target = baseline + rel_height * (peak_val - baseline)
-
-    # Search left
-    left_x = None
-    for i in range(peak_idx, left_idx, -1):
-        if y[i] <= target:
-            # Interpolate
-            if i < peak_idx:
-                frac = (target - y[i]) / (y[i + 1] - y[i]) if y[i + 1] != y[i] else 0
-                left_x = x[i] + frac * (x[i + 1] - x[i])
-            break
-
-    # Search right
-    right_x = None
-    for i in range(peak_idx, right_idx):
-        if y[i] <= target:
-            if i > peak_idx:
-                frac = (target - y[i]) / (y[i - 1] - y[i]) if y[i - 1] != y[i] else 0
-                right_x = x[i] + frac * (x[i - 1] - x[i])
-            break
-
-    if left_x is not None and right_x is not None:
-        return abs(right_x - left_x)
-    return None
+    Widths are found by interpolation in sample space and then mapped onto
+    x, so non-uniform and descending x axes are handled.
+    """
+    widths = peak_widths(y, [peak_idx], rel_height=rel_height)
+    left_ip, right_ip = float(widths[2][0]), float(widths[3][0])
+    if not np.isfinite(left_ip) or not np.isfinite(right_ip) or right_ip <= left_ip:
+        return None
+    samples = np.arange(len(x))
+    left_x = np.interp(left_ip, samples, x)
+    right_x = np.interp(right_ip, samples, x)
+    return float(abs(right_x - left_x))
 
 
 # ---------------------------------------------------------------------------
@@ -222,16 +201,17 @@ def _calc_peak_area(
     properties: dict,
     prop_idx: int,
 ) -> Optional[float]:
-    """Integrate peak area using trapezoidal rule between base points."""
-    # Use peak base indices if available
+    """Integrate peak area above a linear baseline between the peak bases.
+
+    Bases are the prominence bases of the peak (from scipy). The result is
+    positive for a positive peak regardless of the direction of x.
+    """
     if "left_bases" in properties and "right_bases" in properties:
-        left = properties["left_bases"][prop_idx]
-        right = properties["right_bases"][prop_idx]
+        left = int(properties["left_bases"][prop_idx])
+        right = int(properties["right_bases"][prop_idx])
     else:
-        # Estimate: search for local minima either side
-        search = max(5, len(x) // 20)
-        left = max(0, peak_idx - search)
-        right = min(len(x) - 1, peak_idx + search)
+        _, left_b, right_b = peak_prominences(y, [peak_idx])
+        left, right = int(left_b[0]), int(right_b[0])
 
     if left >= right:
         return None
@@ -239,11 +219,15 @@ def _calc_peak_area(
     segment_x = x[left:right + 1]
     segment_y = y[left:right + 1]
 
-    # Subtract baseline (linear between endpoints)
-    baseline = np.interp(segment_x, [segment_x[0], segment_x[-1]], [segment_y[0], segment_y[-1]])
+    # Linear baseline between the end points (valid for either x direction)
+    x0, x1 = segment_x[0], segment_x[-1]
+    if x1 == x0:
+        return None
+    baseline = segment_y[0] + (segment_y[-1] - segment_y[0]) * (segment_x - x0) / (x1 - x0)
     corrected = segment_y - baseline
 
-    return float(trapezoid(corrected, segment_x))
+    area = float(trapezoid(corrected, segment_x))
+    return -area if x1 < x0 else area
 
 
 # ---------------------------------------------------------------------------

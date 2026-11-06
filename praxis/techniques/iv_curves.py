@@ -269,21 +269,6 @@ def analyse_solar_cell(
 # Diode fitting (Shockley equation)
 # ---------------------------------------------------------------------------
 
-def _shockley_with_rs(v: np.ndarray, I0: float, n: float, Rs: float, T: float) -> np.ndarray:
-    """Shockley diode equation with series resistance.
-
-    I = I0 * (exp(q*(V - I*Rs) / (n*kB*T)) - 1)
-
-    For fitting, we use an approximate form assuming Rs is small:
-    I ~ I0 * (exp(q*V / (n*kB*T)) - 1) and then refine.
-    """
-    Vt = k_B * T / q  # Thermal voltage
-    exponent = v / (n * Vt)
-    # Clip to avoid overflow
-    exponent = np.clip(exponent, -500, 500)
-    return I0 * (np.exp(exponent) - 1.0)
-
-
 def analyse_diode(
     voltage: Any,
     current: Any,

@@ -63,7 +63,7 @@ your DataFrame straight in:
 ```python
 from praxis.techniques.xrd import analyse_xrd
 from praxis.techniques.dsc_tga import analyse_dsc
-from praxis.techniques.impedance import analyse_eis
+from praxis.techniques.impedance import parse_impedance, fit_circuit
 
 xrd = analyse_xrd(df["two_theta_deg"], df["intensity"], wavelength="Cu_Ka")
 print(xrd.table())                 # Scherrer sizes, peak list, Williamson-Hall
@@ -103,8 +103,8 @@ fig, ax = plot_data(df["two_theta_deg"], df["intensity"],
 from praxis.core.exporter import export_figure
 
 export_figure(fig, "xrd.png", dpi=300, output_dir="figures")
-# Also writes figures/xrd.png.meta.json with the parameters used,
-# so the figure is exactly reproducible later.
+# Saves to figures/praxis_output/xrd.png and writes a .meta.json sidecar
+# recording the figure settings (size, DPI, labels, limits, export options).
 ```
 
 That's the whole flow. The [cookbook](docs/cookbook.md) has a worked recipe for every technique using the same four-step pattern.
@@ -215,7 +215,7 @@ pip install -e .[test]
 python -m pytest tests/ -v
 ```
 
-134 tests run on every push to main on Python 3.10, 3.11, and 3.12 (see [Actions](https://github.com/zmtsikriteas/praxis/actions)).
+The test suite runs on every push to main on Python 3.10, 3.11, and 3.12 (see [Actions](https://github.com/zmtsikriteas/praxis/actions)).
 
 ## Contributing
 

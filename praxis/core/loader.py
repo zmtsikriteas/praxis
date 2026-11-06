@@ -266,7 +266,14 @@ def _load_excel(
     else:
         kwargs["sheet_name"] = 0
 
-    df = pd.read_excel(path, **kwargs)
+    try:
+        df = pd.read_excel(path, **kwargs)
+    except ImportError as exc:
+        if path.suffix.lower() == ".xls":
+            raise ImportError(
+                "Reading legacy .xls files needs xlrd: pip install praxis-sci[xls]"
+            ) from exc
+        raise
     return _coerce_numeric(df)
 
 
@@ -290,49 +297,83 @@ def _load_json(path: Path) -> pd.DataFrame:
 
 
 def _load_jcamp(path: Path) -> pd.DataFrame:
-    """Load a JCAMP-DX (.jdx/.dx) spectroscopy file (basic parser)."""
+    """Load a JCAMP-DX (.jdx/.dx) spectroscopy file (basic parser).
+
+    Supports uncompressed ``(X++(Y..Y))`` data, where each line holds an x
+    value followed by one or more y values spaced by DELTAX, and
+    ``(XY..XY)`` point lists. Compressed (SQZ/DIF) forms are not supported.
+    """
     raw = _read_raw(path)
-    x_values: list[float] = []
-    y_values: list[float] = []
-    in_data = False
     x_factor = 1.0
     y_factor = 1.0
+    header: dict[str, float] = {}
+    mode: Optional[str] = None
+    data_lines: list[list[str]] = []
 
     for line in raw.splitlines():
         stripped = line.strip()
         upper = stripped.upper()
 
-        if upper.startswith("##XFACTOR="):
-            x_factor = float(stripped.split("=", 1)[1].strip())
-        elif upper.startswith("##YFACTOR="):
-            y_factor = float(stripped.split("=", 1)[1].strip())
-        elif upper.startswith("##XYDATA=") or upper.startswith("##XYPOINTS="):
-            in_data = True
-            continue
-        elif upper.startswith("##END="):
-            in_data = False
-            continue
-        elif upper.startswith("##"):
+        if upper.startswith("##"):
+            key, _, value = stripped[2:].partition("=")
+            key = key.strip().upper()
+            value = value.split("$$", 1)[0].strip()
+            # Any label ends the previous data block
+            mode = None
+            if key == "XFACTOR":
+                x_factor = float(value)
+            elif key == "YFACTOR":
+                y_factor = float(value)
+            elif key in ("FIRSTX", "LASTX", "DELTAX", "NPOINTS"):
+                try:
+                    header[key] = float(value)
+                except ValueError:
+                    pass
+            elif key == "XYDATA":
+                mode = "xydata"
+            elif key in ("XYPOINTS", "PEAK TABLE"):
+                mode = "xypoints"
             continue
 
-        if in_data and stripped:
-            parts = re.split(r"[\s,;]+", stripped)
-            try:
-                x_val = float(parts[0]) * x_factor
-                for yp in parts[1:]:
-                    y_val = float(yp) * y_factor
-                    x_values.append(x_val)
-                    y_values.append(y_val)
-                    # Increment x for packed data (approximate)
-            except ValueError:
-                continue
+        if mode and stripped:
+            data_lines.append([mode] + [t for t in re.split(r"[\s,;]+", stripped) if t])
+
+    x_values: list[float] = []
+    y_values: list[float] = []
+
+    # Spacing between consecutive ordinates on a packed XYDATA line (real units)
+    deltax: Optional[float] = header.get("DELTAX")
+    if deltax is None and {"FIRSTX", "LASTX", "NPOINTS"} <= header.keys() and header["NPOINTS"] > 1:
+        deltax = (header["LASTX"] - header["FIRSTX"]) / (header["NPOINTS"] - 1)
+
+    for parts in data_lines:
+        mode, tokens = parts[0], parts[1:]
+        try:
+            numbers = [float(t) for t in tokens]
+        except ValueError:
+            continue
+        if not numbers:
+            continue
+        if mode == "xypoints":
+            for i in range(0, len(numbers) - 1, 2):
+                x_values.append(numbers[i] * x_factor)
+                y_values.append(numbers[i + 1] * y_factor)
+        else:
+            x0 = numbers[0] * x_factor
+            ys = numbers[1:]
+            if len(ys) > 1 and deltax is None:
+                raise ValueError(
+                    f"JCAMP-DX file {path} has packed data but no DELTAX or "
+                    "FIRSTX/LASTX/NPOINTS to determine x spacing."
+                )
+            for i, yv in enumerate(ys):
+                x_values.append(x0 + i * (deltax or 0.0))
+                y_values.append(yv * y_factor)
 
     if not x_values:
         raise ValueError(f"No data extracted from JCAMP-DX file: {path}")
 
-    # Trim to equal length
-    n = min(len(x_values), len(y_values))
-    return pd.DataFrame({"x": x_values[:n], "y": y_values[:n]})
+    return pd.DataFrame({"x": x_values, "y": y_values})
 
 
 def _load_hdf5(path: Path) -> pd.DataFrame:
@@ -754,6 +795,13 @@ def _detect_delimiter(lines: list[str]) -> str:
     if not sample:
         return r"\s+"
 
+    # European CSV: ';' separates fields and ',' is the decimal mark, so
+    # commas may out-number semicolons. If every line splits consistently
+    # on ';', prefer it.
+    semi_counts = [line.count(";") for line in sample]
+    if semi_counts[0] > 0 and len(set(semi_counts)) == 1:
+        return ";"
+
     best_delim = None
     best_score = -1.0
     for d in candidates:
@@ -792,9 +840,9 @@ def _detect_decimal(lines: list[str], delimiter: str) -> str:
         fields = re.split(re.escape(delimiter) if delimiter != r"\s+" else r"\s+", line.strip())
         for field in fields:
             field = field.strip()
-            if re.match(r"^\d+,\d+$", field):
+            if re.match(r"^[-+]?\d+,\d+([eE][-+]?\d+)?$", field):
                 comma_count += 1
-            if re.match(r"^\d+\.\d+$", field):
+            if re.match(r"^[-+]?\d+\.\d+([eE][-+]?\d+)?$", field):
                 dot_count += 1
 
     return "," if comma_count > dot_count else "."
@@ -830,10 +878,9 @@ def _read_raw(path: Path, encoding: Optional[str] = None) -> str:
       1. If ``encoding`` is given, use it.
       2. Otherwise inspect the first bytes for a BOM and pick the encoding
          it implies (UTF-8, UTF-16-LE, UTF-16-BE).
-      3. Try the common encodings in order: utf-8, utf-8-sig, cp1252,
-         latin-1, utf-16.
-      4. If those all fail and ``charset-normalizer`` is installed, ask
-         it for a best guess.
+      3. Try strict UTF-8.
+      4. If ``charset-normalizer`` is installed, ask it for a best guess.
+      5. Fall back to cp1252, then latin-1 (which accepts any bytes).
     """
     raw_bytes = path.read_bytes()
 
@@ -853,14 +900,14 @@ def _read_raw(path: Path, encoding: Optional[str] = None) -> str:
                 f"Cannot decode {path} with requested encoding '{encoding}': {exc}",
             )
 
-    # Fallback chain
-    for enc in ("utf-8", "utf-8-sig", "cp1252", "latin-1", "utf-16"):
-        try:
-            return raw_bytes.decode(enc)
-        except (UnicodeDecodeError, LookupError):
-            continue
+    # Strict UTF-8 first: it rarely decodes non-UTF-8 text by accident
+    try:
+        return raw_bytes.decode("utf-8")
+    except UnicodeDecodeError:
+        pass
 
-    # Last resort: charset-normalizer if available
+    # charset-normalizer, if installed, before the permissive single-byte
+    # encodings (latin-1 decodes any byte sequence, so it must come last)
     try:
         from charset_normalizer import from_bytes
         result = from_bytes(raw_bytes).best()
@@ -870,20 +917,27 @@ def _read_raw(path: Path, encoding: Optional[str] = None) -> str:
     except ImportError:
         pass
 
-    raise UnicodeDecodeError(
-        "utf-8", raw_bytes[:32], 0, 1,
-        f"Cannot decode {path}. Tried utf-8, utf-8-sig, cp1252, latin-1, utf-16. "
-        f"Install 'charset-normalizer' for broader detection: pip install charset-normalizer",
-    )
+    try:
+        return raw_bytes.decode("cp1252")
+    except UnicodeDecodeError:
+        return raw_bytes.decode("latin-1")
 
 
 def _coerce_numeric(df: pd.DataFrame) -> pd.DataFrame:
-    """Try to convert columns to numeric where possible."""
+    """Convert columns to numeric where they are mostly numeric.
+
+    Columns in which fewer than half of the non-empty values parse as
+    numbers (e.g. sample names) are left as text rather than turned into
+    NaNs.
+    """
     for col in df.columns:
         try:
-            df[col] = pd.to_numeric(df[col], errors="coerce")
+            converted = pd.to_numeric(df[col], errors="coerce")
         except (ValueError, TypeError):
-            pass
+            continue
+        n_present = int(df[col].notna().sum())
+        if n_present == 0 or converted.notna().sum() >= 0.5 * n_present:
+            df[col] = converted
     return df
 
 

@@ -86,7 +86,7 @@ Praxis (from Greek praxis — practice, action) is a scientific data analysis sk
 - **Publication-ready by default**: correct fonts, axis labels, units, colourblind-safe colours (Okabe-Ito).
 - **Technique-aware**: knows what analysis makes sense for each data type.
 - **Non-destructive**: never modifies original files. Outputs to separate directory.
-- **Reproducible**: every figure includes metadata sidecar for exact recreation.
+- **Reproducible**: every figure includes a metadata sidecar recording its settings.
 - **Batch-friendly**: same analysis across multiple files trivially.
 - **Templatable**: save analysis pipelines, replay on new data.
 
@@ -106,7 +106,7 @@ Use this skill when:
 ## Scripts Location
 
 Praxis is a Python package. Install once with `pip install praxis-sci`,
-or run from a clone via `pip install -e ~/Documents/Praxis`. Import with:
+or run from a clone via `pip install -e .` in the repository. Import with:
 ```python
 from praxis.core.loader import load_data
 from praxis.core.plotter import plot_data

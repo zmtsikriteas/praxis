@@ -321,6 +321,7 @@ def predict_multiplicity(
     intensity: Any,
     *,
     peaks: Optional[list[int]] = None,
+    spectrometer_freq_mhz: float = 400.0,
 ) -> list[dict[str, Any]]:
     """Estimate splitting pattern from peak shape analysis.
 
@@ -335,6 +336,9 @@ def predict_multiplicity(
         Signal intensity.
     peaks : list of int, optional
         Indices of major peaks to analyse. If None, auto-detect.
+    spectrometer_freq_mhz : float
+        Spectrometer frequency in MHz, used to convert line spacings in
+        ppm to J in Hz.
 
     Returns
     -------
@@ -363,15 +367,22 @@ def predict_multiplicity(
 
     peak_regions = _detect_peak_regions(cs, intens_pos, peaks_idx)
 
+    # Lines of one multiplet share a region: analyse each region once
+    unique_regions = sorted(set(peak_regions))
+
     results = []
-    for idx, (left, right) in zip(peaks_idx, peak_regions):
+    for left, right in unique_regions:
         region_cs = cs[left:right + 1]
         region_int = intens_pos[left:right + 1]
 
-        mult, j_hz = _estimate_multiplicity(region_cs, region_int)
+        mult, j_hz = _estimate_multiplicity(region_cs, region_int, spectrometer_freq_mhz)
+
+        # Multiplet centre: intensity-weighted mean shift of the region
+        centre = float(np.sum(region_cs * region_int) / np.sum(region_int)) \
+            if np.sum(region_int) > 0 else float(region_cs[np.argmax(region_int)])
 
         results.append({
-            "chemical_shift": float(cs[idx]),
+            "chemical_shift": centre,
             "multiplicity": mult,
             "sub_peak_count": _count_sub_peaks(region_int),
             "estimated_j_hz": j_hz,
@@ -424,7 +435,7 @@ def _count_sub_peaks(intens: np.ndarray) -> int:
 
 
 def _estimate_multiplicity(
-    cs: np.ndarray, intens: np.ndarray
+    cs: np.ndarray, intens: np.ndarray, spectrometer_freq_mhz: float = 400.0
 ) -> tuple[str, Optional[float]]:
     """Estimate multiplicity and J-coupling from a peak region."""
     n_sub = _count_sub_peaks(intens)
@@ -447,9 +458,9 @@ def _estimate_multiplicity(
             sub_ppm = cs[sub_idx]
             spacings = np.abs(np.diff(np.sort(sub_ppm)))
             if len(spacings) > 0:
-                # Convert ppm spacing to Hz (assume 400 MHz spectrometer)
+                # Convert ppm spacing to Hz: 1 ppm = spectrometer MHz in Hz
                 mean_spacing_ppm = float(np.mean(spacings))
-                j_hz = mean_spacing_ppm * 400.0  # Approximate
+                j_hz = mean_spacing_ppm * spectrometer_freq_mhz
 
     return mult, j_hz
 

@@ -49,13 +49,13 @@ dependencies = [
 [project.optional-dependencies]
 hdf5 = ["h5py>=3.8"]
 tiff = ["Pillow>=10.0"]
-pdf = ["pdfplumber>=0.10"]
+xls = ["xlrd>=2.0"]
 encoding = ["charset-normalizer>=3.0"]
 biologic = ["galvani>=0.4"]
 all = [
     "h5py>=3.8",
     "Pillow>=10.0",
-    "pdfplumber>=0.10",
+    "xlrd>=2.0",
     "charset-normalizer>=3.0",
     "galvani>=0.4",
 ]
